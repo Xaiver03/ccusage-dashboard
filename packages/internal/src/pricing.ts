@@ -360,7 +360,21 @@ export class LiteLLMPricingFetcher implements Disposable {
 			this.getModelPricing(modelName),
 			Result.andThen((pricing) => {
 				if (pricing == null) {
-					return Result.fail(new Error(`Model pricing not found for ${modelName}`));
+					// Unknown model (e.g. glm, kimi, deepseek): fall back to
+					// claude-sonnet-4-6 pricing so costs are never silently $0.
+					// Hardcoded so this works in --offline mode too.
+					// Anthropic claude-sonnet-4-6: $3/$15 per 1M input/output tokens
+					this.logger.warn(
+						`Model pricing not found for "${modelName}", falling back to claude-sonnet-4-6 pricing`,
+					);
+					const fallbackPricing: LiteLLMModelPricing = {
+						input_cost_per_token: 3e-6,
+						output_cost_per_token: 15e-6,
+						cache_creation_input_token_cost: 3.75e-6,
+						cache_read_input_token_cost: 0.3e-6,
+					};
+					const baseCost = this.calculateCostFromPricing(tokens, fallbackPricing);
+					return Result.succeed(baseCost);
 				}
 				const baseCost = this.calculateCostFromPricing(tokens, pricing);
 				const multiplier =

@@ -25,13 +25,37 @@ export const hourlyCommand = define({
 		const config = loadConfig(ctx.values.config, ctx.values.debug);
 		const mergedOptions = { ...mergeConfigWithArgs(ctx, config, ctx.values.debug) };
 
-		// Default to today's data only for hourly command
+		// Handle convenience time range flags
 		const today = new Date();
 		const todayStr = today.toLocaleDateString('en-CA').replace(/-/g, '');
-		if (mergedOptions.since == null) {
+
+		if (mergedOptions.today) {
 			mergedOptions.since = todayStr;
-		}
-		if (mergedOptions.until == null) {
+			mergedOptions.until = todayStr;
+		} else if (mergedOptions.yesterday) {
+			const yesterday = new Date(today);
+			yesterday.setDate(yesterday.getDate() - 1);
+			const yesterdayStr = yesterday.toLocaleDateString('en-CA').replace(/-/g, '');
+			mergedOptions.since = yesterdayStr;
+			mergedOptions.until = yesterdayStr;
+		} else if (mergedOptions.last3days) {
+			const threeDaysAgo = new Date(today);
+			threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
+			mergedOptions.since = threeDaysAgo.toLocaleDateString('en-CA').replace(/-/g, '');
+			mergedOptions.until = todayStr;
+		} else if (mergedOptions.last7days) {
+			const sevenDaysAgo = new Date(today);
+			sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+			mergedOptions.since = sevenDaysAgo.toLocaleDateString('en-CA').replace(/-/g, '');
+			mergedOptions.until = todayStr;
+		} else if (mergedOptions.last30days) {
+			const thirtyDaysAgo = new Date(today);
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+			mergedOptions.since = thirtyDaysAgo.toLocaleDateString('en-CA').replace(/-/g, '');
+			mergedOptions.until = todayStr;
+		} else if (mergedOptions.since == null) {
+			// Default to today's data only for hourly command
+			mergedOptions.since = todayStr;
 			mergedOptions.until = todayStr;
 		}
 
@@ -46,8 +70,7 @@ export const hourlyCommand = define({
 		if (hourlyData.length === 0) {
 			if (useJson) {
 				log(JSON.stringify([]));
-			}
-			else {
+			} else {
 				logger.warn('No Claude usage data found.');
 			}
 			process.exit(0);
@@ -79,12 +102,10 @@ export const hourlyCommand = define({
 					process.exit(1);
 				}
 				log(jqResult.value);
-			}
-			else {
+			} else {
 				log(JSON.stringify(jsonOutput, null, 2));
 			}
-		}
-		else {
+		} else {
 			logger.box('Claude Code Token Usage Report - Hourly');
 
 			const tableConfig: UsageReportConfig = {

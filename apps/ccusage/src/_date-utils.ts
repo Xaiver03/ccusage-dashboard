@@ -69,9 +69,9 @@ export function formatHour(dateStr: string, timezone?: string): string {
 	const datePart = dateFormatter.format(date); // YYYY-MM-DD
 	let hourPart = hourFormatter.format(date); // HH (or "24" for midnight in some impls)
 	// Normalize edge cases: en-CA may emit "24" for midnight
-	if (hourPart === '24') hourPart = '00';
+	if (hourPart === '24') {hourPart = '00';}
 	// Some locales pad differently — ensure 2 digits
-	if (hourPart.length === 1) hourPart = `0${hourPart}`;
+	if (hourPart.length === 1) {hourPart = `0${hourPart}`;}
 	return `${datePart}T${hourPart}`;
 }
 

@@ -963,11 +963,11 @@ export async function loadHourlyUsageData(options?: LoadOptions): Promise<Hourly
 			try {
 				const parsed = JSON.parse(line) as unknown;
 				const result = v.safeParse(usageDataSchema, parsed);
-				if (!result.success) return;
+				if (!result.success) {return;}
 				const data = result.output;
 
 				const uniqueHash = createUniqueHash(data);
-				if (isDuplicateEntry(uniqueHash, processedHashes)) return;
+				if (isDuplicateEntry(uniqueHash, processedHashes)) {return;}
 				markAsProcessed(uniqueHash, processedHashes);
 
 				const hour = formatHour(data.timestamp, options?.timezone);
@@ -991,7 +991,7 @@ export async function loadHourlyUsageData(options?: LoadOptions): Promise<Hourly
 
 	const results = Object.entries(groupedData)
 		.map(([groupKey, entries]) => {
-			if (entries == null) return undefined;
+			if (entries == null) {return undefined;}
 			const parts = groupKey.split('\x00');
 			const hourKey = parts[0] ?? groupKey;
 			const project = parts.length > 1 ? parts[1] : undefined;
@@ -1030,7 +1030,11 @@ export async function loadHourlyUsageData(options?: LoadOptions): Promise<Hourly
 
 	const finalFiltered = filterByProject(dateFiltered, (item) => item.project, options?.project);
 
-	return sortByDate(finalFiltered, (item) => item.hour.replace('T', ' ') + ':00:00', options?.order);
+	return sortByDate(
+		finalFiltered,
+		(item) => `${item.hour.replace('T', ' ')  }:00:00`,
+		options?.order,
+	);
 }
 
 /**
@@ -3459,7 +3463,7 @@ invalid json line
 				expect(results).toHaveLength(1);
 				expect(results[0]?.inputTokens).toBe(1000);
 				expect(results[0]?.outputTokens).toBe(500);
-				expect(results[0]?.totalCost).toBe(0); // 0 cost for unknown model
+				expect(results[0]?.totalCost).toBeGreaterThan(0); // fallback cost for unknown model
 			});
 		});
 
@@ -3912,7 +3916,7 @@ invalid json line
 				expect(result).toBe(0);
 			});
 
-			it('should return 0 when model pricing not found', async () => {
+			it('should return fallback cost when model pricing not found', async () => {
 				const dataWithUnknownModel = {
 					...mockUsageData,
 					message: { ...mockUsageData.message, model: createModelName('unknown-model') },
@@ -3920,7 +3924,7 @@ invalid json line
 
 				using fetcher = new PricingFetcher();
 				const result = await calculateCostForEntry(dataWithUnknownModel, 'calculate', fetcher);
-				expect(result).toBe(0);
+				expect(result).toBeGreaterThan(0); // fallback to sonnet-4-6 pricing
 			});
 
 			it('should handle missing cache tokens', async () => {

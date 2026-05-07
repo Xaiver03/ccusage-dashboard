@@ -172,8 +172,8 @@ function generateData() {
 		const sessionOutput = runCusage('session --json');
 		const sessionData = JSON.parse(sessionOutput);
 
-		console.log('获取今日小时级数据...');
-		const hourlyOutput = runCusage('hourly --json');
+		console.log('获取近三天小时级数据...');
+		const hourlyOutput = runCusage('hourly --json --last-3-days');
 		const hourlyData = JSON.parse(hourlyOutput);
 		console.log(`  小时数据: ${hourlyData.hourly?.length || 0} 条`);
 

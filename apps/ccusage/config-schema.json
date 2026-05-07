@@ -97,6 +97,36 @@
 							"description": "Force compact mode for narrow displays (better for screenshots)",
 							"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 							"default": false
+						},
+						"today": {
+							"type": "boolean",
+							"description": "Show data for today only (shorthand for --since today --until today)",
+							"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+							"default": false
+						},
+						"yesterday": {
+							"type": "boolean",
+							"description": "Show data for yesterday only",
+							"markdownDescription": "Show data for yesterday only",
+							"default": false
+						},
+						"last3days": {
+							"type": "boolean",
+							"description": "Show data for last 3 days (including today)",
+							"markdownDescription": "Show data for last 3 days (including today)",
+							"default": false
+						},
+						"last7days": {
+							"type": "boolean",
+							"description": "Show data for last 7 days (including today)",
+							"markdownDescription": "Show data for last 7 days (including today)",
+							"default": false
+						},
+						"last30days": {
+							"type": "boolean",
+							"description": "Show data for last 30 days (including today)",
+							"markdownDescription": "Show data for last 30 days (including today)",
+							"default": false
 						}
 					},
 					"additionalProperties": false,
@@ -193,6 +223,36 @@
 									"type": "boolean",
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
+									"default": false
+								},
+								"today": {
+									"type": "boolean",
+									"description": "Show data for today only (shorthand for --since today --until today)",
+									"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+									"default": false
+								},
+								"yesterday": {
+									"type": "boolean",
+									"description": "Show data for yesterday only",
+									"markdownDescription": "Show data for yesterday only",
+									"default": false
+								},
+								"last3days": {
+									"type": "boolean",
+									"description": "Show data for last 3 days (including today)",
+									"markdownDescription": "Show data for last 3 days (including today)",
+									"default": false
+								},
+								"last7days": {
+									"type": "boolean",
+									"description": "Show data for last 7 days (including today)",
+									"markdownDescription": "Show data for last 7 days (including today)",
+									"default": false
+								},
+								"last30days": {
+									"type": "boolean",
+									"description": "Show data for last 30 days (including today)",
+									"markdownDescription": "Show data for last 30 days (including today)",
 									"default": false
 								},
 								"instances": {
@@ -302,6 +362,36 @@
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
+								},
+								"today": {
+									"type": "boolean",
+									"description": "Show data for today only (shorthand for --since today --until today)",
+									"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+									"default": false
+								},
+								"yesterday": {
+									"type": "boolean",
+									"description": "Show data for yesterday only",
+									"markdownDescription": "Show data for yesterday only",
+									"default": false
+								},
+								"last3days": {
+									"type": "boolean",
+									"description": "Show data for last 3 days (including today)",
+									"markdownDescription": "Show data for last 3 days (including today)",
+									"default": false
+								},
+								"last7days": {
+									"type": "boolean",
+									"description": "Show data for last 7 days (including today)",
+									"markdownDescription": "Show data for last 7 days (including today)",
+									"default": false
+								},
+								"last30days": {
+									"type": "boolean",
+									"description": "Show data for last 30 days (including today)",
+									"markdownDescription": "Show data for last 30 days (including today)",
+									"default": false
 								}
 							},
 							"additionalProperties": false
@@ -394,6 +484,36 @@
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
+								},
+								"today": {
+									"type": "boolean",
+									"description": "Show data for today only (shorthand for --since today --until today)",
+									"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+									"default": false
+								},
+								"yesterday": {
+									"type": "boolean",
+									"description": "Show data for yesterday only",
+									"markdownDescription": "Show data for yesterday only",
+									"default": false
+								},
+								"last3days": {
+									"type": "boolean",
+									"description": "Show data for last 3 days (including today)",
+									"markdownDescription": "Show data for last 3 days (including today)",
+									"default": false
+								},
+								"last7days": {
+									"type": "boolean",
+									"description": "Show data for last 7 days (including today)",
+									"markdownDescription": "Show data for last 7 days (including today)",
+									"default": false
+								},
+								"last30days": {
+									"type": "boolean",
+									"description": "Show data for last 30 days (including today)",
+									"markdownDescription": "Show data for last 30 days (including today)",
+									"default": false
 								}
 							},
 							"additionalProperties": false
@@ -485,6 +605,36 @@
 									"type": "boolean",
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
+									"default": false
+								},
+								"today": {
+									"type": "boolean",
+									"description": "Show data for today only (shorthand for --since today --until today)",
+									"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+									"default": false
+								},
+								"yesterday": {
+									"type": "boolean",
+									"description": "Show data for yesterday only",
+									"markdownDescription": "Show data for yesterday only",
+									"default": false
+								},
+								"last3days": {
+									"type": "boolean",
+									"description": "Show data for last 3 days (including today)",
+									"markdownDescription": "Show data for last 3 days (including today)",
+									"default": false
+								},
+								"last7days": {
+									"type": "boolean",
+									"description": "Show data for last 7 days (including today)",
+									"markdownDescription": "Show data for last 7 days (including today)",
+									"default": false
+								},
+								"last30days": {
+									"type": "boolean",
+									"description": "Show data for last 30 days (including today)",
+									"markdownDescription": "Show data for last 30 days (including today)",
 									"default": false
 								},
 								"startOfWeek": {
@@ -587,6 +737,36 @@
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
 									"default": false
 								},
+								"today": {
+									"type": "boolean",
+									"description": "Show data for today only (shorthand for --since today --until today)",
+									"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+									"default": false
+								},
+								"yesterday": {
+									"type": "boolean",
+									"description": "Show data for yesterday only",
+									"markdownDescription": "Show data for yesterday only",
+									"default": false
+								},
+								"last3days": {
+									"type": "boolean",
+									"description": "Show data for last 3 days (including today)",
+									"markdownDescription": "Show data for last 3 days (including today)",
+									"default": false
+								},
+								"last7days": {
+									"type": "boolean",
+									"description": "Show data for last 7 days (including today)",
+									"markdownDescription": "Show data for last 7 days (including today)",
+									"default": false
+								},
+								"last30days": {
+									"type": "boolean",
+									"description": "Show data for last 30 days (including today)",
+									"markdownDescription": "Show data for last 30 days (including today)",
+									"default": false
+								},
 								"id": {
 									"type": "string",
 									"description": "Load usage data for a specific session ID",
@@ -682,6 +862,36 @@
 									"type": "boolean",
 									"description": "Force compact mode for narrow displays (better for screenshots)",
 									"markdownDescription": "Force compact mode for narrow displays (better for screenshots)",
+									"default": false
+								},
+								"today": {
+									"type": "boolean",
+									"description": "Show data for today only (shorthand for --since today --until today)",
+									"markdownDescription": "Show data for today only (shorthand for --since today --until today)",
+									"default": false
+								},
+								"yesterday": {
+									"type": "boolean",
+									"description": "Show data for yesterday only",
+									"markdownDescription": "Show data for yesterday only",
+									"default": false
+								},
+								"last3days": {
+									"type": "boolean",
+									"description": "Show data for last 3 days (including today)",
+									"markdownDescription": "Show data for last 3 days (including today)",
+									"default": false
+								},
+								"last7days": {
+									"type": "boolean",
+									"description": "Show data for last 7 days (including today)",
+									"markdownDescription": "Show data for last 7 days (including today)",
+									"default": false
+								},
+								"last30days": {
+									"type": "boolean",
+									"description": "Show data for last 30 days (including today)",
+									"markdownDescription": "Show data for last 30 days (including today)",
 									"default": false
 								},
 								"active": {

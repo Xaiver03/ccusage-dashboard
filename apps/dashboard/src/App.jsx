@@ -149,7 +149,8 @@ function App() {
 	const [tokenViewMode, setTokenViewMode] = useState('total'); // 'total' | 'breakdown'
 
 	const t = translations[lang];
-	const isToday = timeRange === 'today' || timeRange === 'yesterday' || timeRange === 'threeDays';
+	const isHourlyView =
+		timeRange === 'today' || timeRange === 'yesterday' || timeRange === 'threeDays';
 
 	useEffect(() => {
 		loadData();
@@ -223,28 +224,56 @@ function App() {
 		}
 	}, [data, timeRange, startDate, endDate]);
 
-	// Hourly data - fill missing hours with zeros for consistent 24h display
+	// Hourly data - fill missing hours with zeros for consistent display
 	const hourlyData = useMemo(() => {
 		if (!data) return [];
 		const raw = data.hourly.hourly || [];
-		const now = new Date();
-		const todayStr = now.toLocaleDateString('en-CA');
 
-		// Create 24 hour buckets
+		// Determine date range from raw data
+		const dates = new Set();
+		for (const item of raw) {
+			if (item.hour && item.hour.length >= 10) {
+				dates.add(item.hour.substring(0, 10));
+			}
+		}
+		const sortedDates = Array.from(dates).sort();
+
+		// Create hour buckets for all dates in range
 		const buckets = {};
-		for (let h = 0; h < 24; h++) {
-			const hourKey = `${todayStr}T${String(h).padStart(2, '0')}`;
-			buckets[hourKey] = {
-				hour: hourKey,
-				inputTokens: 0,
-				outputTokens: 0,
-				cacheCreationTokens: 0,
-				cacheReadTokens: 0,
-				totalTokens: 0,
-				totalCost: 0,
-				modelsUsed: [],
-				modelBreakdowns: [],
-			};
+		if (sortedDates.length > 0) {
+			for (const dateStr of sortedDates) {
+				for (let h = 0; h < 24; h++) {
+					const hourKey = `${dateStr}T${String(h).padStart(2, '0')}`;
+					buckets[hourKey] = {
+						hour: hourKey,
+						inputTokens: 0,
+						outputTokens: 0,
+						cacheCreationTokens: 0,
+						cacheReadTokens: 0,
+						totalTokens: 0,
+						totalCost: 0,
+						modelsUsed: [],
+						modelBreakdowns: [],
+					};
+				}
+			}
+		} else {
+			// Fallback: create buckets for today only
+			const todayStr = new Date().toLocaleDateString('en-CA');
+			for (let h = 0; h < 24; h++) {
+				const hourKey = `${todayStr}T${String(h).padStart(2, '0')}`;
+				buckets[hourKey] = {
+					hour: hourKey,
+					inputTokens: 0,
+					outputTokens: 0,
+					cacheCreationTokens: 0,
+					cacheReadTokens: 0,
+					totalTokens: 0,
+					totalCost: 0,
+					modelsUsed: [],
+					modelBreakdowns: [],
+				};
+			}
 		}
 
 		// Fill in actual data
@@ -254,7 +283,7 @@ function App() {
 			}
 		}
 
-		return Object.values(buckets);
+		return Object.values(buckets).sort((a, b) => a.hour.localeCompare(b.hour));
 	}, [data]);
 
 	if (loading) {
@@ -281,10 +310,87 @@ function App() {
 	}
 
 	// Stats calculations
-	const sourceData = isToday ? hourlyData : filteredDailyData;
+	// Filter hourly data by selected time range
+	const filteredHourlyData = useMemo(() => {
+		if (!data) return [];
+		const raw = data.hourly.hourly || [];
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const todayStr = today.toLocaleDateString('en-CA');
+
+		switch (timeRange) {
+			case 'today':
+				return raw.filter((item) => item.hour && item.hour.startsWith(todayStr));
+			case 'yesterday': {
+				const yesterday = new Date(today);
+				yesterday.setDate(yesterday.getDate() - 1);
+				const yestStr = yesterday.toLocaleDateString('en-CA');
+				return raw.filter((item) => item.hour && item.hour.startsWith(yestStr));
+			}
+			case 'threeDays': {
+				const threeDaysAgo = new Date(today);
+				threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+				return raw.filter((item) => {
+					if (!item.hour) return false;
+					const d = new Date(item.hour.substring(0, 10));
+					return d >= threeDaysAgo;
+				});
+			}
+			default:
+				return raw;
+		}
+	}, [data, timeRange]);
+
+	// Build display buckets for hourly view (fills missing hours)
+	const displayHourlyData = useMemo(() => {
+		if (!isHourlyView) return [];
+		const raw = filteredHourlyData;
+		if (raw.length === 0) return [];
+
+		// Get all unique dates from filtered data
+		const dates = new Set();
+		for (const item of raw) {
+			if (item.hour && item.hour.length >= 10) {
+				dates.add(item.hour.substring(0, 10));
+			}
+		}
+		const sortedDates = Array.from(dates).sort();
+
+		// Create buckets for all dates
+		const buckets = {};
+		for (const dateStr of sortedDates) {
+			for (let h = 0; h < 24; h++) {
+				const hourKey = `${dateStr}T${String(h).padStart(2, '0')}`;
+				buckets[hourKey] = {
+					hour: hourKey,
+					inputTokens: 0,
+					outputTokens: 0,
+					cacheCreationTokens: 0,
+					cacheReadTokens: 0,
+					totalTokens: 0,
+					totalCost: 0,
+					modelsUsed: [],
+					modelBreakdowns: [],
+				};
+			}
+		}
+
+		// Fill in actual data
+		for (const item of raw) {
+			if (buckets[item.hour]) {
+				buckets[item.hour] = item;
+			}
+		}
+
+		return Object.values(buckets).sort((a, b) => a.hour.localeCompare(b.hour));
+	}, [filteredHourlyData, isHourlyView]);
+
+	const sourceData = isHourlyView ? displayHourlyData : filteredDailyData;
 	const totalTokens = sourceData.reduce((sum, item) => sum + (item.totalTokens || 0), 0);
 	const totalCost = sourceData.reduce((sum, item) => sum + (item.totalCost || 0), 0);
-	const activeDays = isToday ? 1 : filteredDailyData.length;
+	const activeDays = isHourlyView
+		? new Set(filteredHourlyData.map((item) => item.hour?.substring(0, 10))).size
+		: filteredDailyData.length;
 
 	const totalInput = sourceData.reduce((s, item) => s + (item.inputTokens || 0), 0);
 	const totalOutput = sourceData.reduce((s, item) => s + (item.outputTokens || 0), 0);
@@ -292,13 +398,16 @@ function App() {
 	const totalCacheRead = sourceData.reduce((s, item) => s + (item.cacheReadTokens || 0), 0);
 
 	// Chart data
-	const tokenTrendData = isToday
+	const tokenTrendData = isHourlyView
 		? {
-				labels: hourlyData.map((h) => `${h.hour.split('T')[1]}:00`),
+				labels: displayHourlyData.map((h) => {
+					const parts = h.hour.split('T');
+					return `${parts[0]} ${parts[1]}:00`;
+				}),
 				datasets: [
 					{
 						label: 'Input',
-						data: hourlyData.map((h) => h.inputTokens),
+						data: displayHourlyData.map((h) => h.inputTokens),
 						backgroundColor: 'rgba(88, 166, 255, 0.8)',
 						borderColor: '#58a6ff',
 						borderWidth: 1,
@@ -307,7 +416,7 @@ function App() {
 					},
 					{
 						label: 'Output',
-						data: hourlyData.map((h) => h.outputTokens),
+						data: displayHourlyData.map((h) => h.outputTokens),
 						backgroundColor: 'rgba(63, 185, 80, 0.8)',
 						borderColor: '#3fb950',
 						borderWidth: 1,
@@ -316,7 +425,7 @@ function App() {
 					},
 					{
 						label: 'Cache Write',
-						data: hourlyData.map((h) => h.cacheCreationTokens),
+						data: displayHourlyData.map((h) => h.cacheCreationTokens),
 						backgroundColor: 'rgba(210, 153, 34, 0.8)',
 						borderColor: '#d29922',
 						borderWidth: 1,
@@ -325,7 +434,7 @@ function App() {
 					},
 					{
 						label: 'Cache Read',
-						data: hourlyData.map((h) => h.cacheReadTokens),
+						data: displayHourlyData.map((h) => h.cacheReadTokens),
 						backgroundColor: 'rgba(188, 140, 255, 0.8)',
 						borderColor: '#bc8cff',
 						borderWidth: 1,
@@ -352,13 +461,16 @@ function App() {
 				],
 			};
 
-	const costTrendData = isToday
+	const costTrendData = isHourlyView
 		? {
-				labels: hourlyData.map((h) => `${h.hour.split('T')[1]}:00`),
+				labels: displayHourlyData.map((h) => {
+					const parts = h.hour.split('T');
+					return `${parts[0]} ${parts[1]}:00`;
+				}),
 				datasets: [
 					{
 						label: 'Cost ($)',
-						data: hourlyData.map((h) => h.totalCost),
+						data: displayHourlyData.map((h) => h.totalCost),
 						backgroundColor: 'rgba(63, 185, 80, 0.6)',
 						borderColor: '#3fb950',
 						borderWidth: 1,
@@ -471,7 +583,7 @@ function App() {
 		maintainAspectRatio: false,
 		plugins: {
 			legend: {
-				display: isToday,
+				display: isHourlyView,
 				position: 'top',
 				labels: {
 					color: '#8b949e',
@@ -863,9 +975,9 @@ function App() {
 			{/* Charts */}
 			<div className="charts-container">
 				<div className="chart-card">
-					<h3>{isToday ? t.todayTokenTrend : t.tokenTrend}</h3>
+					<h3>{isHourlyView ? t.todayTokenTrend : t.tokenTrend}</h3>
 					<div className="chart-wrapper">
-						{isToday ? (
+						{isHourlyView ? (
 							<Bar data={tokenTrendData} options={tokenChartOptions} />
 						) : (
 							<Line data={tokenTrendData} options={tokenChartOptions} />
@@ -873,9 +985,9 @@ function App() {
 					</div>
 				</div>
 				<div className="chart-card">
-					<h3>{isToday ? t.todayCostTrend : t.costTrend}</h3>
+					<h3>{isHourlyView ? t.todayCostTrend : t.costTrend}</h3>
 					<div className="chart-wrapper">
-						{isToday ? (
+						{isHourlyView ? (
 							<Bar data={costTrendData} options={costChartOptions} />
 						) : (
 							<Line data={costTrendData} options={costChartOptions} />
@@ -978,19 +1090,19 @@ function App() {
 
 			{/* Recent Usage */}
 			<div className="recent-card" style={{ marginBottom: 24 }}>
-				<h3>{isToday ? t.todayRecentUsage : t.recentUsage}</h3>
+				<h3>{isHourlyView ? t.todayRecentUsage : t.recentUsage}</h3>
 				<table className="recent-table">
 					<thead>
 						<tr>
-							<th>{isToday ? t.time : t.date}</th>
+							<th>{isHourlyView ? t.time : t.date}</th>
 							<th>{t.tokenCount}</th>
 							<th>{t.cost}</th>
 							<th>{t.models}</th>
 						</tr>
 					</thead>
 					<tbody>
-						{isToday
-							? [...hourlyData].reverse().map((h, index) => (
+						{isHourlyView
+							? [...displayHourlyData].reverse().map((h, index) => (
 									<tr key={index}>
 										<td>{h.hour.replace('T', ' ')}</td>
 										<td>{formatNumber(h.totalTokens)}</td>
@@ -1024,7 +1136,7 @@ function App() {
 										</td>
 									</tr>
 								))}
-						{(isToday ? hourlyData.length === 0 : recentData.length === 0) && (
+						{(isHourlyView ? displayHourlyData.length === 0 : recentData.length === 0) && (
 							<tr>
 								<td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
 									{t.noData}

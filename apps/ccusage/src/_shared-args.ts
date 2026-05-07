@@ -110,6 +110,31 @@ export const sharedArgs = {
 		description: 'Force compact mode for narrow displays (better for screenshots)',
 		default: false,
 	},
+	today: {
+		type: 'boolean',
+		description: 'Show data for today only (shorthand for --since today --until today)',
+		default: false,
+	},
+	yesterday: {
+		type: 'boolean',
+		description: 'Show data for yesterday only',
+		default: false,
+	},
+	last3days: {
+		type: 'boolean',
+		description: 'Show data for last 3 days (including today)',
+		default: false,
+	},
+	last7days: {
+		type: 'boolean',
+		description: 'Show data for last 7 days (including today)',
+		default: false,
+	},
+	last30days: {
+		type: 'boolean',
+		description: 'Show data for last 30 days (including today)',
+		default: false,
+	},
 } as const satisfies Args;
 
 /**

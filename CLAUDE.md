@@ -309,6 +309,20 @@ ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.
 Dependencies should always be added as devDependencies unless explicitly requested otherwise.
 
+## File Writing Rules
+
+**Step-by-Step Writing (分步骤写入):**
+
+- When writing or modifying files, if the content exceeds 50 lines, you MUST write it in multiple steps (chunks of less than 50 lines at a time)
+- Use the Edit tool for incremental modifications, never rewrite entire large files at once
+- This prevents data loss and makes changes easier to review
+
+**Prohibited Commands (禁止命令):**
+
+- **NEVER use `sed` or any sed-like commands** for file modifications
+- Always use the Edit tool or Write tool for file changes
+- For batch replacements, use the Edit tool with `replace_all` option or write a small script using Node.js/Python file APIs
+
 ---
 
 # 本地 Fork 说明（Local Fork Notes）
