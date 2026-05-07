@@ -308,3 +308,42 @@ NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.
 Dependencies should always be added as devDependencies unless explicitly requested otherwise.
+
+---
+
+# 本地 Fork 说明（Local Fork Notes）
+
+## 修改目的
+
+用户通过 `cc switch` 切换多个第三方 token（glm、kimi、deepseek、MiniMax 等），这些模型在 LiteLLM 定价数据库中没有记录，原版直接返回 `$0.00`，导致费用统计失真。
+
+## 修改内容
+
+**文件：** `packages/internal/src/pricing.ts`，`calculateCostFromTokens()` 方法
+
+**改动：** 当模型定价查找失败时，不再 fallback 到 0，而是改用 `claude-sonnet-4-6` 的定价重新计算，并输出 warn 日志提示。
+
+**效果：** 所有未知模型（glm、kimi、deepseek 等）的费用按 claude-sonnet-4-6 定价估算（$3/$15 per 1M tokens），不再显示 $0.00。
+
+## 构建与安装
+
+```bash
+cd "/Users/rocalight/Desktop/All in one Data/01_PROJECTS/ccusage"
+
+# 安装依赖
+pnpm install
+
+# 构建
+pnpm run build
+
+# 全局安装本地修改版（覆盖 npm 全局版本）
+npm install -g ./apps/ccusage
+```
+
+## 同步上游
+
+```bash
+git pull origin main
+# 重新构建安装
+pnpm run build && npm install -g ./apps/ccusage
+```

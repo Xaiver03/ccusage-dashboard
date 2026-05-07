@@ -37,6 +37,7 @@ import {
 	filterByDateRange,
 	formatDate,
 	formatDateCompact,
+	formatHour,
 	getDateWeek,
 	getDayNumber,
 	sortByDate,
@@ -47,6 +48,7 @@ import {
 	activityDateSchema,
 	createBucket,
 	createDailyDate,
+	createHourlyDate,
 	createISOTimestamp,
 	createMessageId,
 	createModelName,
@@ -56,6 +58,7 @@ import {
 	createSessionId,
 	createVersion,
 	dailyDateSchema,
+	hourlyDateSchema,
 	isoTimestampSchema,
 	messageIdSchema,
 	modelNameSchema,
@@ -255,6 +258,26 @@ export const dailyUsageSchema = v.object({
  * Type definition for daily usage aggregation
  */
 export type DailyUsage = v.InferOutput<typeof dailyUsageSchema>;
+
+/**
+ * Valibot schema for hourly usage aggregation data
+ */
+export const hourlyUsageSchema = v.object({
+	hour: hourlyDateSchema, // YYYY-MM-DDTHH format
+	inputTokens: v.number(),
+	outputTokens: v.number(),
+	cacheCreationTokens: v.number(),
+	cacheReadTokens: v.number(),
+	totalCost: v.number(),
+	modelsUsed: v.array(modelNameSchema),
+	modelBreakdowns: v.array(modelBreakdownSchema),
+	project: v.optional(v.string()),
+});
+
+/**
+ * Type definition for hourly usage aggregation
+ */
+export type HourlyUsage = v.InferOutput<typeof hourlyUsageSchema>;
 
 /**
  * Valibot schema for session-based usage aggregation data
@@ -898,6 +921,116 @@ export async function loadDailyUsageData(options?: LoadOptions): Promise<DailyUs
 
 	// Sort by date based on order option (default to descending)
 	return sortByDate(finalFiltered, (item) => item.date, options?.order);
+}
+
+/**
+ * Loads and aggregates Claude usage data by hour
+ * Same pipeline as loadDailyUsageData but groups by YYYY-MM-DDTHH instead of YYYY-MM-DD
+ * @param options - Optional configuration for loading and filtering data
+ * @returns Array of hourly usage summaries sorted by hour
+ */
+export async function loadHourlyUsageData(options?: LoadOptions): Promise<HourlyUsage[]> {
+	const claudePaths = toArray(options?.claudePath ?? getClaudePaths());
+	const allFiles = await globUsageFiles(claudePaths);
+	const fileList = allFiles.map((f) => f.file);
+	if (fileList.length === 0) {
+		return [];
+	}
+
+	const projectFilteredFiles = filterByProject(
+		fileList,
+		(filePath) => extractProjectFromPath(filePath),
+		options?.project,
+	);
+
+	const sortedFiles = await sortFilesByTimestamp(projectFilteredFiles);
+	const mode = options?.mode ?? 'auto';
+	using fetcher = mode === 'display' ? null : new PricingFetcher(options?.offline);
+	const processedHashes = new Set<string>();
+
+	const allEntries: {
+		data: UsageData;
+		hour: string;
+		date: string;
+		cost: number;
+		model: string | undefined;
+		project: string;
+	}[] = [];
+
+	for (const file of sortedFiles) {
+		const project = extractProjectFromPath(file);
+		await processJSONLFileByLine(file, async (line) => {
+			try {
+				const parsed = JSON.parse(line) as unknown;
+				const result = v.safeParse(usageDataSchema, parsed);
+				if (!result.success) return;
+				const data = result.output;
+
+				const uniqueHash = createUniqueHash(data);
+				if (isDuplicateEntry(uniqueHash, processedHashes)) return;
+				markAsProcessed(uniqueHash, processedHashes);
+
+				const hour = formatHour(data.timestamp, options?.timezone);
+				const date = formatDate(data.timestamp, options?.timezone, DEFAULT_LOCALE);
+				const cost =
+					fetcher != null ? await calculateCostForEntry(data, mode, fetcher) : (data.costUSD ?? 0);
+
+				allEntries.push({ data, hour, date, cost, model: getDisplayModelName(data), project });
+			} catch {
+				// Skip invalid JSON lines
+			}
+		});
+	}
+
+	const needsProjectGrouping = options?.groupByProject === true || options?.project != null;
+	const groupingKey = needsProjectGrouping
+		? (entry: (typeof allEntries)[0]) => `${entry.hour}\x00${entry.project}`
+		: (entry: (typeof allEntries)[0]) => entry.hour;
+
+	const groupedData = groupBy(allEntries, groupingKey);
+
+	const results = Object.entries(groupedData)
+		.map(([groupKey, entries]) => {
+			if (entries == null) return undefined;
+			const parts = groupKey.split('\x00');
+			const hourKey = parts[0] ?? groupKey;
+			const project = parts.length > 1 ? parts[1] : undefined;
+
+			const modelAggregates = aggregateByModel(
+				entries,
+				(entry) => entry.model,
+				(entry) => entry.data.message.usage,
+				(entry) => entry.cost,
+			);
+			const modelBreakdowns = createModelBreakdowns(modelAggregates);
+			const totals = calculateTotals(
+				entries,
+				(entry) => entry.data.message.usage,
+				(entry) => entry.cost,
+			);
+			const modelsUsed = extractUniqueModels(entries, (e) => e.model);
+
+			return {
+				hour: createHourlyDate(hourKey),
+				...totals,
+				modelsUsed: modelsUsed as ModelName[],
+				modelBreakdowns,
+				...(project != null && { project }),
+			};
+		})
+		.filter((item) => item != null);
+
+	// Filter by date range using the date portion of the hour key (YYYY-MM-DD)
+	const dateFiltered = filterByDateRange(
+		results,
+		(item) => item.hour.substring(0, 10),
+		options?.since,
+		options?.until,
+	);
+
+	const finalFiltered = filterByProject(dateFiltered, (item) => item.project, options?.project);
+
+	return sortByDate(finalFiltered, (item) => item.hour.replace('T', ' ') + ':00:00', options?.order);
 }
 
 /**

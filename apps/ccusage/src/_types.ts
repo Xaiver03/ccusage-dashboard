@@ -45,6 +45,13 @@ export const dailyDateSchema = v.pipe(
 	v.brand('DailyDate'),
 );
 
+const yyyymmddhhRegex = /^\d{4}-\d{2}-\d{2}T\d{2}$/;
+export const hourlyDateSchema = v.pipe(
+	v.string(),
+	v.regex(yyyymmddhhRegex, 'Date must be in YYYY-MM-DDTHH format'),
+	v.brand('HourlyDate'),
+);
+
 export const activityDateSchema = v.pipe(
 	v.string(),
 	v.regex(yyyymmddRegex, 'Date must be in YYYY-MM-DD format'),
@@ -94,6 +101,7 @@ export type RequestId = v.InferOutput<typeof requestIdSchema>;
 export type MessageId = v.InferOutput<typeof messageIdSchema>;
 export type ISOTimestamp = v.InferOutput<typeof isoTimestampSchema>;
 export type DailyDate = v.InferOutput<typeof dailyDateSchema>;
+export type HourlyDate = v.InferOutput<typeof hourlyDateSchema>;
 export type ActivityDate = v.InferOutput<typeof activityDateSchema>;
 export type MonthlyDate = v.InferOutput<typeof monthlyDateSchema>;
 export type WeeklyDate = v.InferOutput<typeof weeklyDateSchema>;
@@ -114,6 +122,7 @@ export function createISOTimestamp(value: string): ISOTimestamp {
 	return v.parse(isoTimestampSchema, value);
 }
 export const createDailyDate = (value: string): DailyDate => v.parse(dailyDateSchema, value);
+export const createHourlyDate = (value: string): HourlyDate => v.parse(hourlyDateSchema, value);
 export function createActivityDate(value: string): ActivityDate {
 	return v.parse(activityDateSchema, value);
 }

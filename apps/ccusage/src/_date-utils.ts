@@ -48,6 +48,34 @@ export function formatDate(dateStr: string, timezone?: string, locale?: string):
 }
 
 /**
+ * Formats a date string to YYYY-MM-DDTHH format (hour bucket key)
+ * @param dateStr - Input date string
+ * @param timezone - Optional timezone to use for formatting
+ * @returns Formatted hour string in YYYY-MM-DDTHH format
+ */
+export function formatHour(dateStr: string, timezone?: string): string {
+	const date = new Date(dateStr);
+	const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		timeZone: timezone,
+	});
+	const hourFormatter = new Intl.DateTimeFormat('en-CA', {
+		hour: '2-digit',
+		hour12: false,
+		timeZone: timezone,
+	});
+	const datePart = dateFormatter.format(date); // YYYY-MM-DD
+	let hourPart = hourFormatter.format(date); // HH (or "24" for midnight in some impls)
+	// Normalize edge cases: en-CA may emit "24" for midnight
+	if (hourPart === '24') hourPart = '00';
+	// Some locales pad differently — ensure 2 digits
+	if (hourPart.length === 1) hourPart = `0${hourPart}`;
+	return `${datePart}T${hourPart}`;
+}
+
+/**
  * Generic function to sort items by date based on sort order
  * @param items - Array of items to sort
  * @param getDate - Function to extract date/timestamp from item
