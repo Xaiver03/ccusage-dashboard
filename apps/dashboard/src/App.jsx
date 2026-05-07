@@ -37,6 +37,8 @@ const translations = {
 		refresh: '刷新数据',
 		timeRange: '时间范围:',
 		today: '今日',
+		yesterday: '昨天',
+		threeDays: '近三天',
 		week: '本周',
 		month: '本月',
 		all: '全部',
@@ -87,6 +89,8 @@ const translations = {
 		refresh: 'Refresh',
 		timeRange: 'Time Range:',
 		today: 'Today',
+		yesterday: 'Yesterday',
+		threeDays: '3 Days',
 		week: 'Week',
 		month: 'Month',
 		all: 'All',
@@ -145,7 +149,7 @@ function App() {
 	const [tokenViewMode, setTokenViewMode] = useState('total'); // 'total' | 'breakdown'
 
 	const t = translations[lang];
-	const isToday = timeRange === 'today';
+	const isToday = timeRange === 'today' || timeRange === 'yesterday' || timeRange === 'threeDays';
 
 	useEffect(() => {
 		loadData();
@@ -179,6 +183,19 @@ function App() {
 					const dayDate = new Date(day.date);
 					return dayDate >= today;
 				});
+			case 'yesterday': {
+				const yesterday = new Date(today);
+				yesterday.setDate(yesterday.getDate() - 1);
+				return dailyData.filter((day) => {
+					const d = new Date(day.date);
+					return d >= yesterday && d < today;
+				});
+			}
+			case 'threeDays': {
+				const threeDaysAgo = new Date(today);
+				threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+				return dailyData.filter((day) => new Date(day.date) >= threeDaysAgo);
+			}
 			case 'week': {
 				const weekAgo = new Date(today);
 				weekAgo.setDate(weekAgo.getDate() - 7);
@@ -601,6 +618,18 @@ function App() {
 					onClick={() => setTimeRange('today')}
 				>
 					{t.today}
+				</button>
+				<button
+					className={timeRange === 'yesterday' ? 'active' : ''}
+					onClick={() => setTimeRange('yesterday')}
+				>
+					{t.yesterday}
+				</button>
+				<button
+					className={timeRange === 'threeDays' ? 'active' : ''}
+					onClick={() => setTimeRange('threeDays')}
+				>
+					{t.threeDays}
 				</button>
 				<button
 					className={timeRange === 'week' ? 'active' : ''}

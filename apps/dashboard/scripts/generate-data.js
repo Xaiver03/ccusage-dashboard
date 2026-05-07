@@ -10,7 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ccusage 路径 (相对 monorepo 根目录)
-const ccusagePath = path.join(__dirname, '../../ccusage/dist/index.js');
+// ccusage 路径 (基于 monorepo 结构: apps/dashboard/scripts/ -> apps/ccusage/dist/)
+const ccusagePath = path.resolve(__dirname, '../../ccusage/dist/index.js');
 
 // Claude 数据目录(支持多个)
 const claudeDirs = [
@@ -147,33 +148,34 @@ function generateHourlyData() {
 	};
 }
 
+function runCusage(args) {
+	const cmd = `node "${ccusagePath}" ${args}`;
+	console.log(`  > ${cmd}`);
+	return execSync(cmd, {
+		encoding: 'utf8',
+		maxBuffer: 50 * 1024 * 1024,
+		timeout: 60000,
+	});
+}
+
 function generateData() {
 	try {
-		const dailyOutput = execSync(`node "${ccusagePath}" daily --json`, {
-			encoding: 'utf8',
-			maxBuffer: 50 * 1024 * 1024,
-		});
+		console.log('获取每日数据...');
+		const dailyOutput = runCusage('daily --json');
 		const dailyData = JSON.parse(dailyOutput);
 
-		const monthlyOutput = execSync(`node "${ccusagePath}" monthly --json`, {
-			encoding: 'utf8',
-			maxBuffer: 50 * 1024 * 1024,
-		});
+		console.log('获取每月数据...');
+		const monthlyOutput = runCusage('monthly --json');
 		const monthlyData = JSON.parse(monthlyOutput);
 
-		const sessionOutput = execSync(`node "${ccusagePath}" session --json`, {
-			encoding: 'utf8',
-			maxBuffer: 50 * 1024 * 1024,
-		});
+		console.log('获取会话数据...');
+		const sessionOutput = runCusage('session --json');
 		const sessionData = JSON.parse(sessionOutput);
 
-		console.log('生成今日小时级数据...');
-		const hourlyOutput = execSync(`node "${ccusagePath}" hourly --json`, {
-			encoding: 'utf8',
-			maxBuffer: 50 * 1024 * 1024,
-		});
+		console.log('获取今日小时级数据...');
+		const hourlyOutput = runCusage('hourly --json');
 		const hourlyData = JSON.parse(hourlyOutput);
-		console.log(`小时数据: ${hourlyData.hourly?.length || 0} 条`);
+		console.log(`  小时数据: ${hourlyData.hourly?.length || 0} 条`);
 
 		const data = {
 			daily: dailyData,
@@ -188,10 +190,10 @@ function generateData() {
 
 		console.log('数据生成成功');
 		console.log('输出:', outputPath);
-		console.log(`每日: ${dailyData.daily?.length || 0} 条`);
-		console.log(`每月: ${monthlyData.monthly?.length || 0} 条`);
-		console.log(`会话: ${sessionData.sessions?.length || 0} 条`);
-		console.log(`今日小时桶: 24`);
+		console.log(`  每日: ${dailyData.daily?.length || 0} 条`);
+		console.log(`  每月: ${monthlyData.monthly?.length || 0} 条`);
+		console.log(`  会话: ${sessionData.sessions?.length || 0} 条`);
+		console.log(`  今日小时桶: 24`);
 	} catch (error) {
 		console.error('数据生成失败:', error.message);
 		process.exit(1);
