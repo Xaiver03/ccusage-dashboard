@@ -1,0 +1,473 @@
+.app {
+	width: 100%;
+	min-height: 100vh;
+	padding: 20px;
+}
+
+/* Header */
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+	padding: 16px 24px;
+	background: var(--bg-secondary);
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+}
+
+.header-left h1 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 4px;
+}
+
+.header-left .subtitle {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+.header-right {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.refresh-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	background: var(--accent-blue);
+	color: white;
+	border-radius: 8px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+	background: #4c9aed;
+}
+
+.refresh-btn svg {
+	display: block;
+}
+
+/* Number Format Toggle */
+.format-toggle {
+	display: inline-flex;
+	background: var(--bg-card);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	padding: 2px;
+	margin-right: 4px;
+}
+
+.format-toggle button {
+	padding: 6px 12px;
+	background: transparent;
+	color: var(--text-secondary);
+	border-radius: 6px;
+	font-size: 0.75rem;
+	font-weight: 500;
+	font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+	transition: all 0.15s;
+}
+
+.format-toggle button:hover {
+	color: var(--text-primary);
+}
+
+.format-toggle button.active {
+	background: var(--accent-blue);
+	color: white;
+}
+
+.data-time {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+/* Time Range Selector */
+.time-range {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 24px;
+	padding: 12px 20px;
+	background: var(--bg-secondary);
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+}
+
+.time-range label {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+	margin-right: 8px;
+}
+
+.time-range button {
+	padding: 6px 16px;
+	background: transparent;
+	color: var(--text-secondary);
+	border-radius: 6px;
+	font-size: 0.875rem;
+	transition: all 0.2s;
+	border: 1px solid transparent;
+}
+
+.time-range button:hover {
+	color: var(--text-primary);
+	background: var(--bg-card);
+}
+
+.time-range button.active {
+	color: var(--text-primary);
+	background: var(--bg-card);
+	border-color: var(--accent-blue);
+}
+
+.time-range .custom-range {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: 16px;
+	padding-left: 16px;
+	border-left: 1px solid var(--border-color);
+}
+
+.time-range input[type='date'] {
+	padding: 6px 12px;
+	background: var(--bg-card);
+	color: var(--text-primary);
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	font-size: 0.8rem;
+}
+
+.time-range input[type='date']::-webkit-calendar-picker-indicator {
+	filter: invert(0.8);
+}
+
+/* Stats Grid */
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.stat-card {
+	background: var(--bg-secondary);
+	padding: 20px 24px;
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+}
+
+.stat-card .stat-label {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+	margin-bottom: 8px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.stat-card .stat-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--accent-blue);
+}
+
+.stat-card .stat-icon svg {
+	display: block;
+}
+
+.stat-card .stat-value {
+	font-size: 2rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+.stat-card .stat-unit {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+	font-weight: 400;
+}
+
+/* Charts Container */
+.charts-container {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.chart-card {
+	background: var(--bg-secondary);
+	padding: 20px;
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+}
+
+.chart-card h3 {
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 16px;
+}
+
+.chart-wrapper {
+	height: 280px;
+	width: 100%;
+}
+
+/* Bottom Section */
+.bottom-section {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+/* Model Distribution */
+.model-card {
+	background: var(--bg-secondary);
+	padding: 20px;
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+}
+
+.model-card h3 {
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 16px;
+}
+
+.pie-wrapper {
+	height: 250px;
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.model-legend {
+	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.legend-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 6px 0;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.legend-item:last-child {
+	border-bottom: none;
+}
+
+.legend-color {
+	width: 12px;
+	height: 12px;
+	border-radius: 3px;
+	margin-right: 8px;
+}
+
+.legend-name {
+	font-size: 0.8rem;
+	color: var(--text-primary);
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.legend-value {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	margin-left: 8px;
+}
+
+.recent-table td {
+	color: var(--text-primary);
+	border-bottom: 1px solid var(--border-color);
+	max-width: 300px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Recent Usage Table */
+.recent-card {
+	background: var(--bg-secondary);
+	padding: 20px;
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+}
+
+.recent-card h3 {
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 16px;
+}
+
+.recent-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.recent-table th,
+.recent-table td {
+	padding: 10px 12px;
+	text-align: left;
+	font-size: 0.8rem;
+}
+
+.recent-table th {
+	color: var(--text-secondary);
+	font-weight: 500;
+	border-bottom: 1px solid var(--border-color);
+	background: var(--bg-card);
+}
+
+.recent-table td {
+	border-bottom: 1px solid var(--border-color);
+}
+
+.recent-table tr:last-child td {
+	border-bottom: none;
+}
+
+.recent-table tr:hover {
+	background: var(--bg-card);
+}
+
+/* Loading, Error, No Data */
+.loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	gap: 20px;
+	color: var(--text-secondary);
+}
+
+.spinner {
+	width: 40px;
+	height: 40px;
+	border: 3px solid var(--border-color);
+	border-top: 3px solid var(--accent-blue);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.error {
+	text-align: center;
+	padding: 50px;
+	background: var(--bg-secondary);
+	border-radius: 12px;
+	border: 1px solid var(--border-color);
+	margin: 50px auto;
+	max-width: 500px;
+}
+
+.error h2 {
+	color: var(--accent-red);
+	margin-bottom: 15px;
+}
+
+.error button {
+	padding: 10px 25px;
+	background: var(--accent-blue);
+	color: white;
+	border-radius: 8px;
+	font-size: 1rem;
+	margin-top: 20px;
+}
+
+.no-data {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	font-size: 1.2rem;
+	color: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+	.charts-container {
+		grid-template-columns: 1fr;
+	}
+
+	.bottom-section {
+		grid-template-columns: 1fr;
+	}
+
+	.stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.time-range .custom-range {
+		margin-left: 0;
+		padding-left: 0;
+		border-left: none;
+		margin-top: 8px;
+		width: 100%;
+	}
+
+	.time-range {
+		flex-wrap: wrap;
+	}
+}
+
+@media (max-width: 768px) {
+	.app {
+		padding: 12px;
+	}
+
+	.header {
+		flex-direction: column;
+		gap: 12px;
+		text-align: center;
+	}
+
+	.stats-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.stat-card .stat-value {
+		font-size: 1.5rem;
+	}
+
+	.time-range {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.time-range button {
+		width: 100%;
+		text-align: center;
+	}
+}
