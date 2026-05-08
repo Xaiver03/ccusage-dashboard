@@ -963,11 +963,15 @@ export async function loadHourlyUsageData(options?: LoadOptions): Promise<Hourly
 			try {
 				const parsed = JSON.parse(line) as unknown;
 				const result = v.safeParse(usageDataSchema, parsed);
-				if (!result.success) {return;}
+				if (!result.success) {
+					return;
+				}
 				const data = result.output;
 
 				const uniqueHash = createUniqueHash(data);
-				if (isDuplicateEntry(uniqueHash, processedHashes)) {return;}
+				if (isDuplicateEntry(uniqueHash, processedHashes)) {
+					return;
+				}
 				markAsProcessed(uniqueHash, processedHashes);
 
 				const hour = formatHour(data.timestamp, options?.timezone);
@@ -991,7 +995,9 @@ export async function loadHourlyUsageData(options?: LoadOptions): Promise<Hourly
 
 	const results = Object.entries(groupedData)
 		.map(([groupKey, entries]) => {
-			if (entries == null) {return undefined;}
+			if (entries == null) {
+				return undefined;
+			}
 			const parts = groupKey.split('\x00');
 			const hourKey = parts[0] ?? groupKey;
 			const project = parts.length > 1 ? parts[1] : undefined;
@@ -1032,7 +1038,7 @@ export async function loadHourlyUsageData(options?: LoadOptions): Promise<Hourly
 
 	return sortByDate(
 		finalFiltered,
-		(item) => `${item.hour.replace('T', ' ')  }:00:00`,
+		(item) => `${item.hour.replace('T', ' ')}:00:00`,
 		options?.order,
 	);
 }
