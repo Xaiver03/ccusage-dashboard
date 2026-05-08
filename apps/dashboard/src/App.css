@@ -504,12 +504,11 @@
 .nav-tabs {
 	display: flex;
 	gap: 4px;
-	margin-bottom: 24px;
 	padding: 4px;
-	background: var(--bg-secondary);
-	border-radius: 12px;
+	background: var(--bg-card);
+	border-radius: 10px;
 	border: 1px solid var(--border-color);
-	width: fit-content;
+	flex-shrink: 0;
 }
 
 .nav-tab {

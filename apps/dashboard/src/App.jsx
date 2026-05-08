@@ -774,6 +774,21 @@ function App() {
 					<p className="subtitle">{t.subtitle}</p>
 				</div>
 				<div className="header-right">
+					{/* Navigation Tabs */}
+					<div className="nav-tabs">
+						<button
+							className={`nav-tab${activeTab === 'dashboard' ? ' active' : ''}`}
+							onClick={() => setActiveTab('dashboard')}
+						>
+							{t.navDashboard}
+						</button>
+						<button
+							className={`nav-tab${activeTab === 'pricing' ? ' active' : ''}`}
+							onClick={() => setActiveTab('pricing')}
+						>
+							{t.navPricing}
+						</button>
+					</div>
 					{/* Language Toggle */}
 					<div className="format-toggle">
 						<button className={lang === 'zh' ? 'active' : ''} onClick={() => setLang('zh')}>
@@ -811,22 +826,6 @@ function App() {
 					</span>
 				</div>
 			</header>
-
-			{/* Navigation Tabs */}
-			<div className="nav-tabs">
-				<button
-					className={`nav-tab${activeTab === 'dashboard' ? ' active' : ''}`}
-					onClick={() => setActiveTab('dashboard')}
-				>
-					{t.navDashboard}
-				</button>
-				<button
-					className={`nav-tab${activeTab === 'pricing' ? ' active' : ''}`}
-					onClick={() => setActiveTab('pricing')}
-				>
-					{t.navPricing}
-				</button>
-			</div>
 
 			{/* Pricing Config Tab */}
 			{activeTab === 'pricing' && <PricingConfig lang={lang} detectedModels={detectedModels} />}
