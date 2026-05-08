@@ -232,6 +232,7 @@ export const modelBreakdownSchema = v.object({
 	cacheCreationTokens: v.number(),
 	cacheReadTokens: v.number(),
 	cost: v.number(),
+	requestCount: v.optional(v.number(), 0),
 });
 
 /**
@@ -370,6 +371,7 @@ type TokenStats = {
 	cacheCreationTokens: number;
 	cacheReadTokens: number;
 	cost: number;
+	requestCount: number;
 };
 
 function getDisplayModelName(data: UsageData): string | undefined {
@@ -396,6 +398,7 @@ function aggregateByModel<T>(
 		cacheCreationTokens: 0,
 		cacheReadTokens: 0,
 		cost: 0,
+		requestCount: 0,
 	};
 
 	for (const entry of entries) {
@@ -416,6 +419,7 @@ function aggregateByModel<T>(
 			cacheCreationTokens: existing.cacheCreationTokens + (usage.cache_creation_input_tokens ?? 0),
 			cacheReadTokens: existing.cacheReadTokens + (usage.cache_read_input_tokens ?? 0),
 			cost: existing.cost + cost,
+			requestCount: existing.requestCount + 1,
 		});
 	}
 
@@ -433,6 +437,7 @@ function aggregateModelBreakdowns(breakdowns: ModelBreakdown[]): Map<string, Tok
 		cacheCreationTokens: 0,
 		cacheReadTokens: 0,
 		cost: 0,
+		requestCount: 0,
 	};
 
 	for (const breakdown of breakdowns) {
@@ -449,6 +454,7 @@ function aggregateModelBreakdowns(breakdowns: ModelBreakdown[]): Map<string, Tok
 			cacheCreationTokens: existing.cacheCreationTokens + breakdown.cacheCreationTokens,
 			cacheReadTokens: existing.cacheReadTokens + breakdown.cacheReadTokens,
 			cost: existing.cost + breakdown.cost,
+			requestCount: existing.requestCount + (breakdown.requestCount ?? 0),
 		});
 	}
 
@@ -487,6 +493,7 @@ function calculateTotals<T>(
 				cacheReadTokens: acc.cacheReadTokens + (usage.cache_read_input_tokens ?? 0),
 				cost: acc.cost + cost,
 				totalCost: acc.totalCost + cost,
+				requestCount: acc.requestCount + 1,
 			};
 		},
 		{
@@ -496,6 +503,7 @@ function calculateTotals<T>(
 			cacheReadTokens: 0,
 			cost: 0,
 			totalCost: 0,
+			requestCount: 0,
 		},
 	);
 }

@@ -69,6 +69,9 @@ const translations = {
 		cacheReadShort: '缓存读',
 		total: '合计',
 		cost: '费用',
+		requests: '请求次数',
+		requestsShort: '请求',
+		totalRequests: '总请求数',
 		recentUsage: '最近每日使用记录',
 		hourlyRecentUsage: '小时使用记录',
 		time: '时间',
@@ -122,6 +125,9 @@ const translations = {
 		cacheReadShort: 'Cache R.',
 		total: 'Total',
 		cost: 'Cost',
+		requests: 'Requests',
+		requestsShort: 'Req.',
+		totalRequests: 'Total Requests',
 		recentUsage: 'Recent Daily Usage',
 		hourlyRecentUsage: 'Hourly Usage',
 		time: 'Time',
@@ -451,6 +457,12 @@ function App() {
 	const totalCacheWrite = sourceData.reduce((s, item) => s + (item.cacheCreationTokens || 0), 0);
 	const totalCacheRead = sourceData.reduce((s, item) => s + (item.cacheReadTokens || 0), 0);
 
+	// Total request count from model breakdowns in source data
+	const totalRequests = sourceData.reduce((sum, item) => {
+		if (!item.modelBreakdowns) return sum;
+		return sum + item.modelBreakdowns.reduce((s, b) => s + (b.requestCount || 0), 0);
+	}, 0);
+
 	// Chart data
 	const tokenTrendData = isHourlyView
 		? {
@@ -574,6 +586,7 @@ function App() {
 						output: 0,
 						cacheWrite: 0,
 						cacheRead: 0,
+						requestCount: 0,
 					};
 				}
 				modelStats[shortName].tokens += tokens;
@@ -582,6 +595,7 @@ function App() {
 				modelStats[shortName].output += breakdown.outputTokens || 0;
 				modelStats[shortName].cacheWrite += breakdown.cacheCreationTokens || 0;
 				modelStats[shortName].cacheRead += breakdown.cacheReadTokens || 0;
+				modelStats[shortName].requestCount += breakdown.requestCount || 0;
 			});
 		}
 	});
@@ -935,6 +949,19 @@ function App() {
 						<span className="stat-unit"> {t.count}</span>
 					</div>
 				</div>
+				<div className="stat-card">
+					<div className="stat-label">
+						<span className="stat-icon" style={{ color: '#58a6ff' }}>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+							</svg>
+						</span>
+						<span>{t.totalRequests}</span>
+					</div>
+					<div className="stat-value">
+						{totalRequests.toLocaleString()}
+					</div>
+				</div>
 			</div>
 
 			{/* Token Category Breakdown */}
@@ -1094,6 +1121,7 @@ function App() {
 						<thead>
 							<tr>
 								<th>{t.model}</th>
+								<th>{t.requestsShort}</th>
 								<th>{t.input}</th>
 								<th>{t.output}</th>
 								<th>{t.cacheWriteShort}</th>
@@ -1121,6 +1149,9 @@ function App() {
 												}}
 											/>
 											{name}
+										</td>
+										<td style={{ color: 'var(--accent-blue)', fontWeight: 500 }}>
+											{(stats.requestCount || 0).toLocaleString()}
 										</td>
 										<td>{formatNumber(stats.input)}</td>
 										<td>{formatNumber(stats.output)}</td>
