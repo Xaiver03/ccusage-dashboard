@@ -47,12 +47,32 @@
 	transition: all 0.2s;
 }
 
-.refresh-btn:hover {
+.refresh-btn:hover:not(:disabled) {
 	background: #4c9aed;
+}
+
+.refresh-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 .refresh-btn svg {
 	display: block;
+}
+
+.refresh-btn svg.spinning {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+.refresh-msg {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+	white-space: nowrap;
 }
 
 /* Number Format Toggle */

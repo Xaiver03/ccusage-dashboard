@@ -33,8 +33,9 @@ ChartJS.register(
 const translations = {
 	zh: {
 		title: 'Claude Code 综合面板',
-		subtitle: '基于 ccusage 的 Token 使用分析',
+		subtitle: '基于 ccusage 的词元使用分析',
 		refresh: '刷新数据',
+		refreshing: '生成中...',
 		timeRange: '时间范围:',
 		today: '今日',
 		yesterday: '昨天',
@@ -44,35 +45,35 @@ const translations = {
 		all: '全部',
 		custom: '自定义',
 		to: '至',
-		totalTokens: 'Total Tokens',
-		totalCost: 'Total Cost',
+		totalTokens: '词元总量',
+		totalCost: '总费用',
 		estimated: '(估算)',
-		activeDays: 'Active Days',
+		activeDays: '活跃天数',
 		days: '天',
 		modelsUsed: '使用模型数',
 		count: '个',
-		inputTokens: 'Input Tokens',
-		outputTokens: 'Output Tokens',
-		cacheWrite: 'Cache Write',
-		cacheRead: 'Cache Read',
-		tokenTrend: 'Token 使用趋势',
-		todayTokenTrend: '今日 Token 使用分布 (按小时)',
+		inputTokens: '输入词元',
+		outputTokens: '输出词元',
+		cacheWrite: '缓存写入',
+		cacheRead: '缓存读取',
+		tokenTrend: '词元使用趋势',
+		hourlyTokenTrend: '词元使用分布（按小时）',
 		costTrend: '费用趋势',
-		todayCostTrend: '今日费用分布 (按小时)',
+		hourlyCostTrend: '费用分布（按小时）',
 		modelDistribution: '模型使用分布',
 		modelStats: '模型使用详细统计',
 		model: '模型',
-		input: 'Input',
-		output: 'Output',
-		cacheWriteShort: 'Cache Write',
-		cacheReadShort: 'Cache Read',
-		total: 'Total',
+		input: '输入',
+		output: '输出',
+		cacheWriteShort: '缓存写',
+		cacheReadShort: '缓存读',
+		total: '合计',
 		cost: '费用',
 		recentUsage: '最近每日使用记录',
-		todayRecentUsage: '今日小时使用记录',
+		hourlyRecentUsage: '小时使用记录',
 		time: '时间',
 		date: '日期',
-		tokenCount: 'Token 数',
+		tokenCount: '词元数',
 		models: '使用模型',
 		noData: '暂无数据',
 		loading: '加载数据中...',
@@ -87,6 +88,7 @@ const translations = {
 		title: 'Claude Code Dashboard',
 		subtitle: 'Token usage analysis powered by ccusage',
 		refresh: 'Refresh',
+		refreshing: 'Generating...',
 		timeRange: 'Time Range:',
 		today: 'Today',
 		yesterday: 'Yesterday',
@@ -108,9 +110,9 @@ const translations = {
 		cacheWrite: 'Cache Write',
 		cacheRead: 'Cache Read',
 		tokenTrend: 'Token Usage Trend',
-		todayTokenTrend: 'Today Token Breakdown (by Hour)',
+		hourlyTokenTrend: 'Token Breakdown (by Hour)',
 		costTrend: 'Cost Trend',
-		todayCostTrend: 'Today Cost Breakdown (by Hour)',
+		hourlyCostTrend: 'Cost Breakdown (by Hour)',
 		modelDistribution: 'Model Distribution',
 		modelStats: 'Model Usage Details',
 		model: 'Model',
@@ -121,7 +123,7 @@ const translations = {
 		total: 'Total',
 		cost: 'Cost',
 		recentUsage: 'Recent Daily Usage',
-		todayRecentUsage: 'Today Hourly Usage',
+		hourlyRecentUsage: 'Hourly Usage',
 		time: 'Time',
 		date: 'Date',
 		tokenCount: 'Tokens',
@@ -147,6 +149,8 @@ function App() {
 	const [numberFormat, setNumberFormat] = useState('compact');
 	const [lang, setLang] = useState('zh');
 	const [tokenViewMode, setTokenViewMode] = useState('total'); // 'total' | 'breakdown'
+	const [refreshing, setRefreshing] = useState(false);
+	const [refreshMsg, setRefreshMsg] = useState('');
 
 	const t = translations[lang];
 	const isHourlyView =
@@ -159,7 +163,7 @@ function App() {
 	const loadData = async () => {
 		try {
 			setLoading(true);
-			const response = await fetch('/data.json');
+			const response = await fetch('/data.json?t=' + Date.now());
 			if (!response.ok) throw new Error('Failed to load data');
 			const jsonData = await response.json();
 			setData(jsonData);
@@ -168,6 +172,29 @@ function App() {
 			setError(err.message);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleRefresh = async () => {
+		if (refreshing) return;
+		setRefreshing(true);
+		setRefreshMsg(lang === 'zh' ? '正在重新生成数据...' : 'Regenerating data...');
+		try {
+			const res = await fetch('/api/refresh', { method: 'POST' });
+			const json = await res.json();
+			if (json.ok) {
+				setRefreshMsg(json.message);
+				await loadData();
+			} else {
+				setRefreshMsg(json.message || (lang === 'zh' ? '刷新失败' : 'Refresh failed'));
+			}
+		} catch {
+			// API server not running, just reload data.json
+			await loadData();
+			setRefreshMsg(lang === 'zh' ? '已重新加载' : 'Reloaded');
+		} finally {
+			setRefreshing(false);
+			setTimeout(() => setRefreshMsg(''), 3000);
 		}
 	};
 
@@ -286,30 +313,6 @@ function App() {
 		return Object.values(buckets).sort((a, b) => a.hour.localeCompare(b.hour));
 	}, [data]);
 
-	if (loading) {
-		return (
-			<div className="loading">
-				<div className="spinner"></div>
-				<p>{t.loading}</p>
-			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<div className="error">
-				<h2>{t.loadError}</h2>
-				<p>{error}</p>
-				<button onClick={loadData}>{t.retry}</button>
-			</div>
-		);
-	}
-
-	if (!data) {
-		return <div className="no-data">{t.noData}</div>;
-	}
-
-	// Stats calculations
 	// Filter hourly data by selected time range
 	const filteredHourlyData = useMemo(() => {
 		if (!data) return [];
@@ -385,6 +388,29 @@ function App() {
 		return Object.values(buckets).sort((a, b) => a.hour.localeCompare(b.hour));
 	}, [filteredHourlyData, isHourlyView]);
 
+	if (loading) {
+		return (
+			<div className="loading">
+				<div className="spinner"></div>
+				<p>{t.loading}</p>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="error">
+				<h2>{t.loadError}</h2>
+				<p>{error}</p>
+				<button onClick={loadData}>{t.retry}</button>
+			</div>
+		);
+	}
+
+	if (!data) {
+		return <div className="no-data">{t.noData}</div>;
+	}
+
 	const sourceData = isHourlyView ? displayHourlyData : filteredDailyData;
 	const totalTokens = sourceData.reduce((sum, item) => sum + (item.totalTokens || 0), 0);
 	const totalCost = sourceData.reduce((sum, item) => sum + (item.totalCost || 0), 0);
@@ -406,7 +432,7 @@ function App() {
 				}),
 				datasets: [
 					{
-						label: 'Input',
+						label: t.inputTokens,
 						data: displayHourlyData.map((h) => h.inputTokens),
 						backgroundColor: 'rgba(88, 166, 255, 0.8)',
 						borderColor: '#58a6ff',
@@ -415,7 +441,7 @@ function App() {
 						stack: 'stack1',
 					},
 					{
-						label: 'Output',
+						label: t.outputTokens,
 						data: displayHourlyData.map((h) => h.outputTokens),
 						backgroundColor: 'rgba(63, 185, 80, 0.8)',
 						borderColor: '#3fb950',
@@ -424,7 +450,7 @@ function App() {
 						stack: 'stack1',
 					},
 					{
-						label: 'Cache Write',
+						label: t.cacheWrite,
 						data: displayHourlyData.map((h) => h.cacheCreationTokens),
 						backgroundColor: 'rgba(210, 153, 34, 0.8)',
 						borderColor: '#d29922',
@@ -433,7 +459,7 @@ function App() {
 						stack: 'stack1',
 					},
 					{
-						label: 'Cache Read',
+						label: t.cacheRead,
 						data: displayHourlyData.map((h) => h.cacheReadTokens),
 						backgroundColor: 'rgba(188, 140, 255, 0.8)',
 						borderColor: '#bc8cff',
@@ -447,7 +473,7 @@ function App() {
 				labels: filteredDailyData.map((day) => day.date),
 				datasets: [
 					{
-						label: 'Token Usage',
+						label: t.totalTokens,
 						data: filteredDailyData.map((day) => day.totalTokens),
 						borderColor: '#58a6ff',
 						backgroundColor: 'rgba(88, 166, 255, 0.1)',
@@ -469,7 +495,7 @@ function App() {
 				}),
 				datasets: [
 					{
-						label: 'Cost ($)',
+						label: t.totalCost,
 						data: displayHourlyData.map((h) => h.totalCost),
 						backgroundColor: 'rgba(63, 185, 80, 0.6)',
 						borderColor: '#3fb950',
@@ -482,7 +508,7 @@ function App() {
 				labels: filteredDailyData.map((day) => day.date),
 				datasets: [
 					{
-						label: 'Cost ($)',
+						label: t.totalCost,
 						data: filteredDailyData.map((day) => day.totalCost),
 						borderColor: '#3fb950',
 						backgroundColor: 'rgba(63, 185, 80, 0.1)',
@@ -710,10 +736,11 @@ function App() {
 							1,234
 						</button>
 					</div>
-					<button onClick={loadData} className="refresh-btn">
-						<IconRefresh size={14} />
-						<span>{t.refresh}</span>
+					<button onClick={handleRefresh} className="refresh-btn" disabled={refreshing}>
+						<IconRefresh size={14} className={refreshing ? 'spinning' : ''} />
+						<span>{refreshing ? t.refreshing : t.refresh}</span>
 					</button>
+					{refreshMsg && <span className="refresh-msg">{refreshMsg}</span>}
 					<span className="data-time">
 						{data.generatedAt
 							? new Date(data.generatedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US')
@@ -810,21 +837,21 @@ function App() {
 					) : (
 						<div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
 							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#58a6ff' }}>Input</span>
+								<span style={{ color: '#58a6ff' }}>{t.input}</span>
 								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalInput)}</span>
 							</div>
 							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#3fb950' }}>Output</span>
+								<span style={{ color: '#3fb950' }}>{t.output}</span>
 								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalOutput)}</span>
 							</div>
 							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#d29922' }}>Cache W</span>
+								<span style={{ color: '#d29922' }}>{t.cacheWriteShort}</span>
 								<span style={{ color: 'var(--text-primary)' }}>
 									{formatNumber(totalCacheWrite)}
 								</span>
 							</div>
 							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#bc8cff' }}>Cache R</span>
+								<span style={{ color: '#bc8cff' }}>{t.cacheReadShort}</span>
 								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalCacheRead)}</span>
 							</div>
 							<div
@@ -838,7 +865,7 @@ function App() {
 									fontWeight: 600,
 								}}
 							>
-								<span style={{ color: 'var(--text-primary)' }}>Total</span>
+								<span style={{ color: 'var(--text-primary)' }}>{t.total}</span>
 								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalTokens)}</span>
 							</div>
 						</div>
@@ -975,7 +1002,7 @@ function App() {
 			{/* Charts */}
 			<div className="charts-container">
 				<div className="chart-card">
-					<h3>{isHourlyView ? t.todayTokenTrend : t.tokenTrend}</h3>
+					<h3>{isHourlyView ? t.hourlyTokenTrend : t.tokenTrend}</h3>
 					<div className="chart-wrapper">
 						{isHourlyView ? (
 							<Bar data={tokenTrendData} options={tokenChartOptions} />
@@ -985,7 +1012,7 @@ function App() {
 					</div>
 				</div>
 				<div className="chart-card">
-					<h3>{isHourlyView ? t.todayCostTrend : t.costTrend}</h3>
+					<h3>{isHourlyView ? t.hourlyCostTrend : t.costTrend}</h3>
 					<div className="chart-wrapper">
 						{isHourlyView ? (
 							<Bar data={costTrendData} options={costChartOptions} />
@@ -1090,7 +1117,7 @@ function App() {
 
 			{/* Recent Usage */}
 			<div className="recent-card" style={{ marginBottom: 24 }}>
-				<h3>{isHourlyView ? t.todayRecentUsage : t.recentUsage}</h3>
+				<h3>{isHourlyView ? t.hourlyRecentUsage : t.recentUsage}</h3>
 				<table className="recent-table">
 					<thead>
 						<tr>

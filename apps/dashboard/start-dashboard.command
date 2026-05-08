@@ -139,6 +139,24 @@ if [ ! -d "$DASHBOARD_DIR/node_modules" ]; then
     pnpm install
 fi
 
+# 启动 API 服务器（后台，用于刷新数据）
+echo ""
+echo -e "${BLUE}🔌 启动 API 服务器 (端口 5174)...${NC}"
+cd "$DASHBOARD_DIR"
+OLD_API_PIDS=$(lsof -ti :5174 2>/dev/null || true)
+if [ -n "$OLD_API_PIDS" ]; then
+    kill -9 $OLD_API_PIDS 2>/dev/null || true
+    sleep 0.5
+fi
+nohup node scripts/api-server.js > /tmp/dashboard-api.log 2>&1 &
+API_PID=$!
+sleep 1
+if lsof -ti :5174 &>/dev/null; then
+    echo -e "${GREEN}✓ API 服务器已启动 (PID: $API_PID)${NC}"
+else
+    echo -e "${YELLOW}⚠ API 服务器启动失败，刷新功能将不可用${NC}"
+fi
+
 # 启动 dev server
 echo ""
 echo -e "${BLUE}🚀 启动 dev server...${NC}"
