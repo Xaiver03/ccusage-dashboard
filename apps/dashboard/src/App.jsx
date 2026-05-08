@@ -14,6 +14,7 @@ import {
 	Filler,
 } from 'chart.js';
 import { IconTokens, IconCost, IconCalendar, IconCpu, IconRefresh } from './Icons';
+import { PricingConfig } from './PricingConfig';
 import './App.css';
 
 ChartJS.register(
@@ -86,6 +87,8 @@ const translations = {
 		fullTooltip: '完整格式 (1,234,567)',
 		breakdownView: '分类视图',
 		totalView: '总计视图',
+		navDashboard: '数据面板',
+		navPricing: '定价配置',
 	},
 	en: {
 		title: 'Claude Code Dashboard',
@@ -142,6 +145,8 @@ const translations = {
 		fullTooltip: 'Full (1,234,567)',
 		breakdownView: 'Breakdown',
 		totalView: 'Total',
+		navDashboard: 'Dashboard',
+		navPricing: 'Pricing',
 	},
 };
 
@@ -157,6 +162,7 @@ function App() {
 	const [tokenViewMode, setTokenViewMode] = useState('total'); // 'total' | 'breakdown'
 	const [refreshing, setRefreshing] = useState(false);
 	const [refreshMsg, setRefreshMsg] = useState('');
+	const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'pricing'
 
 	const t = translations[lang];
 	const isHourlyView =
@@ -421,6 +427,21 @@ function App() {
 
 		return Object.values(buckets).sort((a, b) => a.hour.localeCompare(b.hour));
 	}, [filteredHourlyData, isHourlyView]);
+
+	// Collect detected model names from data (must be before early returns)
+	const detectedModels = useMemo(() => {
+		if (!data) return [];
+		const models = new Set();
+		const allDays = [...(data.daily?.daily || []), ...(data.hourly?.hourly || [])];
+		for (const item of allDays) {
+			if (item.modelBreakdowns) {
+				for (const b of item.modelBreakdowns) {
+					if (b.modelName) models.add(b.modelName);
+				}
+			}
+		}
+		return Array.from(models);
+	}, [data]);
 
 	if (loading) {
 		return (
@@ -791,454 +812,504 @@ function App() {
 				</div>
 			</header>
 
-			{/* Time Range Selector */}
-			<div className="time-range">
-				<label>{t.timeRange}</label>
+			{/* Navigation Tabs */}
+			<div className="nav-tabs">
 				<button
-					className={timeRange === 'today' ? 'active' : ''}
-					onClick={() => setTimeRange('today')}
+					className={`nav-tab${activeTab === 'dashboard' ? ' active' : ''}`}
+					onClick={() => setActiveTab('dashboard')}
 				>
-					{t.today}
-				</button>
-				<button
-					className={timeRange === 'yesterday' ? 'active' : ''}
-					onClick={() => setTimeRange('yesterday')}
-				>
-					{t.yesterday}
+					{t.navDashboard}
 				</button>
 				<button
-					className={timeRange === 'threeDays' ? 'active' : ''}
-					onClick={() => setTimeRange('threeDays')}
+					className={`nav-tab${activeTab === 'pricing' ? ' active' : ''}`}
+					onClick={() => setActiveTab('pricing')}
 				>
-					{t.threeDays}
+					{t.navPricing}
 				</button>
-				<button
-					className={timeRange === 'week' ? 'active' : ''}
-					onClick={() => setTimeRange('week')}
-				>
-					{t.week}
-				</button>
-				<button
-					className={timeRange === 'month' ? 'active' : ''}
-					onClick={() => setTimeRange('month')}
-				>
-					{t.month}
-				</button>
-				<button className={timeRange === 'all' ? 'active' : ''} onClick={() => setTimeRange('all')}>
-					{t.all}
-				</button>
-				<div className="custom-range">
-					<button
-						className={timeRange === 'custom' ? 'active' : ''}
-						onClick={() => setTimeRange('custom')}
-					>
-						{t.custom}
-					</button>
-					{timeRange === 'custom' && (
-						<>
-							<input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-							<span style={{ color: 'var(--text-secondary)' }}>{t.to}</span>
-							<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-						</>
-					)}
-				</div>
 			</div>
 
-			{/* Stats Grid */}
-			<div className="stats-grid">
-				{/* Total Tokens with toggle */}
-				<div className="stat-card">
-					<div className="stat-label" style={{ justifyContent: 'space-between' }}>
-						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-							<span className="stat-icon">
-								<IconTokens size={14} />
-							</span>
-							<span>{t.totalTokens}</span>
-						</div>
-						<div className="format-toggle" style={{ margin: 0 }}>
+			{/* Pricing Config Tab */}
+			{activeTab === 'pricing' && <PricingConfig lang={lang} detectedModels={detectedModels} />}
+
+			{/* Dashboard Tab */}
+			{activeTab === 'dashboard' && (
+				<>
+					{/* Time Range Selector */}
+					<div className="time-range">
+						<label>{t.timeRange}</label>
+						<button
+							className={timeRange === 'today' ? 'active' : ''}
+							onClick={() => setTimeRange('today')}
+						>
+							{t.today}
+						</button>
+						<button
+							className={timeRange === 'yesterday' ? 'active' : ''}
+							onClick={() => setTimeRange('yesterday')}
+						>
+							{t.yesterday}
+						</button>
+						<button
+							className={timeRange === 'threeDays' ? 'active' : ''}
+							onClick={() => setTimeRange('threeDays')}
+						>
+							{t.threeDays}
+						</button>
+						<button
+							className={timeRange === 'week' ? 'active' : ''}
+							onClick={() => setTimeRange('week')}
+						>
+							{t.week}
+						</button>
+						<button
+							className={timeRange === 'month' ? 'active' : ''}
+							onClick={() => setTimeRange('month')}
+						>
+							{t.month}
+						</button>
+						<button
+							className={timeRange === 'all' ? 'active' : ''}
+							onClick={() => setTimeRange('all')}
+						>
+							{t.all}
+						</button>
+						<div className="custom-range">
 							<button
-								className={tokenViewMode === 'total' ? 'active' : ''}
-								onClick={() => setTokenViewMode('total')}
-								title={t.totalView}
-								style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+								className={timeRange === 'custom' ? 'active' : ''}
+								onClick={() => setTimeRange('custom')}
 							>
-								∑
+								{t.custom}
 							</button>
-							<button
-								className={tokenViewMode === 'breakdown' ? 'active' : ''}
-								onClick={() => setTokenViewMode('breakdown')}
-								title={t.breakdownView}
-								style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-							>
-								≡
-							</button>
+							{timeRange === 'custom' && (
+								<>
+									<input
+										type="date"
+										value={startDate}
+										onChange={(e) => setStartDate(e.target.value)}
+									/>
+									<span style={{ color: 'var(--text-secondary)' }}>{t.to}</span>
+									<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+								</>
+							)}
 						</div>
 					</div>
-					{tokenViewMode === 'total' ? (
-						<div className="stat-value">{formatNumber(totalTokens)}</div>
-					) : (
-						<div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#58a6ff' }}>{t.input}</span>
-								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalInput)}</span>
-							</div>
-							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#3fb950' }}>{t.output}</span>
-								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalOutput)}</span>
-							</div>
-							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#d29922' }}>{t.cacheWriteShort}</span>
-								<span style={{ color: 'var(--text-primary)' }}>
-									{formatNumber(totalCacheWrite)}
-								</span>
-							</div>
-							<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-								<span style={{ color: '#bc8cff' }}>{t.cacheReadShort}</span>
-								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalCacheRead)}</span>
-							</div>
-							<div
-								style={{
-									borderTop: '1px solid var(--border-color)',
-									marginTop: 2,
-									paddingTop: 4,
-									display: 'flex',
-									justifyContent: 'space-between',
-									fontSize: '0.85rem',
-									fontWeight: 600,
-								}}
-							>
-								<span style={{ color: 'var(--text-primary)' }}>{t.total}</span>
-								<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalTokens)}</span>
-							</div>
-						</div>
-					)}
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon">
-							<IconCost size={14} />
-						</span>
-						<span>{t.totalCost}</span>
-						<span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginLeft: 4 }}>
-							{t.estimated}
-						</span>
-					</div>
-					<div className="stat-value">${totalCost.toFixed(2)}</div>
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon">
-							<IconCalendar size={14} />
-						</span>
-						<span>{t.activeDays}</span>
-					</div>
-					<div className="stat-value">
-						{activeDays}
-						<span className="stat-unit"> {t.days}</span>
-					</div>
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon">
-							<IconCpu size={14} />
-						</span>
-						<span>{t.modelsUsed}</span>
-					</div>
-					<div className="stat-value">
-						{sortedModels.length}
-						<span className="stat-unit"> {t.count}</span>
-					</div>
-				</div>
-			</div>
 
-			{/* Token Category Breakdown */}
-			<div className="stats-grid stats-grid-5" style={{ marginBottom: 24 }}>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon" style={{ color: '#58a6ff' }}>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-							>
-								<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-							</svg>
-						</span>
-						<span>{t.inputTokens}</span>
-					</div>
-					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
-						{formatNumber(totalInput)}
-					</div>
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon" style={{ color: '#3fb950' }}>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-							>
-								<polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
-								<polyline points="16 17 22 17 22 11" />
-							</svg>
-						</span>
-						<span>{t.outputTokens}</span>
-					</div>
-					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
-						{formatNumber(totalOutput)}
-					</div>
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon" style={{ color: '#d29922' }}>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-							>
-								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-								<polyline points="7 10 12 15 17 10" />
-								<line x1="12" y1="15" x2="12" y2="3" />
-							</svg>
-						</span>
-						<span>{t.cacheWrite}</span>
-					</div>
-					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
-						{formatNumber(totalCacheWrite)}
-					</div>
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon" style={{ color: '#bc8cff' }}>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-							>
-								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-								<polyline points="14 2 14 8 20 8" />
-								<line x1="16" y1="13" x2="8" y2="13" />
-								<line x1="16" y1="17" x2="8" y2="17" />
-							</svg>
-						</span>
-						<span>{t.cacheRead}</span>
-					</div>
-					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
-						{formatNumber(totalCacheRead)}
-					</div>
-				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon" style={{ color: '#58a6ff' }}>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-							>
-								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-							</svg>
-						</span>
-						<span>{t.totalRequests}</span>
-					</div>
-					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
-						{totalRequests.toLocaleString()}
-					</div>
-				</div>
-			</div>
-
-			{/* Charts */}
-			<div className="charts-container">
-				<div className="chart-card">
-					<h3>{isHourlyView ? t.hourlyTokenTrend : t.tokenTrend}</h3>
-					<div className="chart-wrapper">
-						{isHourlyView ? (
-							<Bar data={tokenTrendData} options={tokenChartOptions} />
-						) : (
-							<Line data={tokenTrendData} options={tokenChartOptions} />
-						)}
-					</div>
-				</div>
-				<div className="chart-card">
-					<h3>{isHourlyView ? t.hourlyCostTrend : t.costTrend}</h3>
-					<div className="chart-wrapper">
-						{isHourlyView ? (
-							<Bar data={costTrendData} options={costChartOptions} />
-						) : (
-							<Line data={costTrendData} options={costChartOptions} />
-						)}
-					</div>
-				</div>
-			</div>
-
-			{/* Bottom Section */}
-			<div className="bottom-section">
-				<div className="model-card">
-					<h3>{t.modelDistribution}</h3>
-					<div className="pie-wrapper">
-						{modelLabels.length > 0 ? (
-							<Pie data={modelChartData} options={pieOptions} />
-						) : (
-							<p style={{ color: 'var(--text-secondary)' }}>{t.noData}</p>
-						)}
-					</div>
-					{modelLabels.length > 0 && (
-						<div className="model-legend">
-							{modelLabels.map((label, index) => {
-								const totalTk = modelValues.reduce((a, b) => a + b, 0);
-								const pct = totalTk > 0 ? ((modelValues[index] / totalTk) * 100).toFixed(1) : 0;
-								return (
-									<div key={label} className="legend-item">
-										<div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-											<span
-												className="legend-color"
-												style={{ backgroundColor: modelColors[index % modelColors.length] }}
-											/>
-											<span className="legend-name" title={label}>
-												{label}
-											</span>
-										</div>
-										<span className="legend-value">
-											{formatNumber(modelValues[index])} ({pct}%)
+					{/* Stats Grid */}
+					<div className="stats-grid">
+						{/* Total Tokens with toggle */}
+						<div className="stat-card">
+							<div className="stat-label" style={{ justifyContent: 'space-between' }}>
+								<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+									<span className="stat-icon">
+										<IconTokens size={14} />
+									</span>
+									<span>{t.totalTokens}</span>
+								</div>
+								<div className="format-toggle" style={{ margin: 0 }}>
+									<button
+										className={tokenViewMode === 'total' ? 'active' : ''}
+										onClick={() => setTokenViewMode('total')}
+										title={t.totalView}
+										style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+									>
+										∑
+									</button>
+									<button
+										className={tokenViewMode === 'breakdown' ? 'active' : ''}
+										onClick={() => setTokenViewMode('breakdown')}
+										title={t.breakdownView}
+										style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+									>
+										≡
+									</button>
+								</div>
+							</div>
+							{tokenViewMode === 'total' ? (
+								<div className="stat-value">{formatNumber(totalTokens)}</div>
+							) : (
+								<div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+									<div
+										style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}
+									>
+										<span style={{ color: '#58a6ff' }}>{t.input}</span>
+										<span style={{ color: 'var(--text-primary)' }}>{formatNumber(totalInput)}</span>
+									</div>
+									<div
+										style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}
+									>
+										<span style={{ color: '#3fb950' }}>{t.output}</span>
+										<span style={{ color: 'var(--text-primary)' }}>
+											{formatNumber(totalOutput)}
 										</span>
 									</div>
-								);
-							})}
-						</div>
-					)}
-				</div>
-
-				<div className="recent-card">
-					<h3>{t.modelStats}</h3>
-					<table className="recent-table">
-						<thead>
-							<tr>
-								<th>{t.model}</th>
-								<th>{t.requestsShort}</th>
-								<th>{t.input}</th>
-								<th>{t.output}</th>
-								<th>{t.cacheWriteShort}</th>
-								<th>{t.cacheReadShort}</th>
-								<th>{t.total}</th>
-								<th>{t.cost}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{sortedModels.map(([name, stats], index) => {
-								const totalTk = modelValues.reduce((a, b) => a + b, 0);
-								const pct = totalTk > 0 ? ((stats.tokens / totalTk) * 100).toFixed(1) : 0;
-								return (
-									<tr key={name}>
-										<td>
-											<span
-												style={{
-													display: 'inline-block',
-													width: 10,
-													height: 10,
-													borderRadius: 2,
-													backgroundColor: modelColors[index % modelColors.length],
-													marginRight: 8,
-													verticalAlign: 'middle',
-												}}
-											/>
-											{name}
-										</td>
-										<td style={{ color: 'var(--accent-blue)', fontWeight: 500 }}>
-											{(stats.requestCount || 0).toLocaleString()}
-										</td>
-										<td>{formatNumber(stats.input)}</td>
-										<td>{formatNumber(stats.output)}</td>
-										<td>{formatNumber(stats.cacheWrite)}</td>
-										<td>{formatNumber(stats.cacheRead)}</td>
-										<td style={{ fontWeight: 600 }}>{formatNumber(stats.tokens)}</td>
-										<td>${stats.cost.toFixed(2)}</td>
-									</tr>
-								);
-							})}
-							{sortedModels.length === 0 && (
-								<tr>
-									<td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-										{t.noData}
-									</td>
-								</tr>
+									<div
+										style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}
+									>
+										<span style={{ color: '#d29922' }}>{t.cacheWriteShort}</span>
+										<span style={{ color: 'var(--text-primary)' }}>
+											{formatNumber(totalCacheWrite)}
+										</span>
+									</div>
+									<div
+										style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}
+									>
+										<span style={{ color: '#bc8cff' }}>{t.cacheReadShort}</span>
+										<span style={{ color: 'var(--text-primary)' }}>
+											{formatNumber(totalCacheRead)}
+										</span>
+									</div>
+									<div
+										style={{
+											borderTop: '1px solid var(--border-color)',
+											marginTop: 2,
+											paddingTop: 4,
+											display: 'flex',
+											justifyContent: 'space-between',
+											fontSize: '0.85rem',
+											fontWeight: 600,
+										}}
+									>
+										<span style={{ color: 'var(--text-primary)' }}>{t.total}</span>
+										<span style={{ color: 'var(--text-primary)' }}>
+											{formatNumber(totalTokens)}
+										</span>
+									</div>
+								</div>
 							)}
-						</tbody>
-					</table>
-				</div>
-			</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon">
+									<IconCost size={14} />
+								</span>
+								<span>{t.totalCost}</span>
+								<span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginLeft: 4 }}>
+									{t.estimated}
+								</span>
+							</div>
+							<div className="stat-value">${totalCost.toFixed(2)}</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon">
+									<IconCalendar size={14} />
+								</span>
+								<span>{t.activeDays}</span>
+							</div>
+							<div className="stat-value">
+								{activeDays}
+								<span className="stat-unit"> {t.days}</span>
+							</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon">
+									<IconCpu size={14} />
+								</span>
+								<span>{t.modelsUsed}</span>
+							</div>
+							<div className="stat-value">
+								{sortedModels.length}
+								<span className="stat-unit"> {t.count}</span>
+							</div>
+						</div>
+					</div>
 
-			{/* Recent Usage */}
-			<div className="recent-card" style={{ marginBottom: 24 }}>
-				<h3>{isHourlyView ? t.hourlyRecentUsage : t.recentUsage}</h3>
-				<table className="recent-table">
-					<thead>
-						<tr>
-							<th>{isHourlyView ? t.time : t.date}</th>
-							<th>{t.tokenCount}</th>
-							<th>{t.cost}</th>
-							<th>{t.models}</th>
-						</tr>
-					</thead>
-					<tbody>
-						{isHourlyView
-							? [...displayHourlyData].reverse().map((h, index) => (
-									<tr key={index}>
-										<td>{h.hour.replace('T', ' ')}</td>
-										<td>{formatNumber(h.totalTokens)}</td>
-										<td>${(h.totalCost || 0).toFixed(2)}</td>
-										<td title={h.modelsUsed?.join(', ')}>
-											{h.modelsUsed
-												?.map((m) =>
-													m
-														.replace('anthropic/', '')
-														.replace('claude-', '')
-														.replace(/-\d{8}$/, ''),
-												)
-												.join(', ') || '-'}
+					{/* Token Category Breakdown */}
+					<div className="stats-grid stats-grid-5" style={{ marginBottom: 24 }}>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon" style={{ color: '#58a6ff' }}>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+									>
+										<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+									</svg>
+								</span>
+								<span>{t.inputTokens}</span>
+							</div>
+							<div className="stat-value" style={{ fontSize: '1.5rem' }}>
+								{formatNumber(totalInput)}
+							</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon" style={{ color: '#3fb950' }}>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+									>
+										<polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+										<polyline points="16 17 22 17 22 11" />
+									</svg>
+								</span>
+								<span>{t.outputTokens}</span>
+							</div>
+							<div className="stat-value" style={{ fontSize: '1.5rem' }}>
+								{formatNumber(totalOutput)}
+							</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon" style={{ color: '#d29922' }}>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+									>
+										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+										<polyline points="7 10 12 15 17 10" />
+										<line x1="12" y1="15" x2="12" y2="3" />
+									</svg>
+								</span>
+								<span>{t.cacheWrite}</span>
+							</div>
+							<div className="stat-value" style={{ fontSize: '1.5rem' }}>
+								{formatNumber(totalCacheWrite)}
+							</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon" style={{ color: '#bc8cff' }}>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+									>
+										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+										<polyline points="14 2 14 8 20 8" />
+										<line x1="16" y1="13" x2="8" y2="13" />
+										<line x1="16" y1="17" x2="8" y2="17" />
+									</svg>
+								</span>
+								<span>{t.cacheRead}</span>
+							</div>
+							<div className="stat-value" style={{ fontSize: '1.5rem' }}>
+								{formatNumber(totalCacheRead)}
+							</div>
+						</div>
+						<div className="stat-card">
+							<div className="stat-label">
+								<span className="stat-icon" style={{ color: '#58a6ff' }}>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+									>
+										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+									</svg>
+								</span>
+								<span>{t.totalRequests}</span>
+							</div>
+							<div className="stat-value" style={{ fontSize: '1.5rem' }}>
+								{totalRequests.toLocaleString()}
+							</div>
+						</div>
+					</div>
+
+					{/* Charts */}
+					<div className="charts-container">
+						<div className="chart-card">
+							<h3>{isHourlyView ? t.hourlyTokenTrend : t.tokenTrend}</h3>
+							<div className="chart-wrapper">
+								{isHourlyView ? (
+									<Bar data={tokenTrendData} options={tokenChartOptions} />
+								) : (
+									<Line data={tokenTrendData} options={tokenChartOptions} />
+								)}
+							</div>
+						</div>
+						<div className="chart-card">
+							<h3>{isHourlyView ? t.hourlyCostTrend : t.costTrend}</h3>
+							<div className="chart-wrapper">
+								{isHourlyView ? (
+									<Bar data={costTrendData} options={costChartOptions} />
+								) : (
+									<Line data={costTrendData} options={costChartOptions} />
+								)}
+							</div>
+						</div>
+					</div>
+
+					{/* Bottom Section */}
+					<div className="bottom-section">
+						<div className="model-card">
+							<h3>{t.modelDistribution}</h3>
+							<div className="pie-wrapper">
+								{modelLabels.length > 0 ? (
+									<Pie data={modelChartData} options={pieOptions} />
+								) : (
+									<p style={{ color: 'var(--text-secondary)' }}>{t.noData}</p>
+								)}
+							</div>
+							{modelLabels.length > 0 && (
+								<div className="model-legend">
+									{modelLabels.map((label, index) => {
+										const totalTk = modelValues.reduce((a, b) => a + b, 0);
+										const pct = totalTk > 0 ? ((modelValues[index] / totalTk) * 100).toFixed(1) : 0;
+										return (
+											<div key={label} className="legend-item">
+												<div
+													style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}
+												>
+													<span
+														className="legend-color"
+														style={{ backgroundColor: modelColors[index % modelColors.length] }}
+													/>
+													<span className="legend-name" title={label}>
+														{label}
+													</span>
+												</div>
+												<span className="legend-value">
+													{formatNumber(modelValues[index])} ({pct}%)
+												</span>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+
+						<div className="recent-card">
+							<h3>{t.modelStats}</h3>
+							<table className="recent-table">
+								<thead>
+									<tr>
+										<th>{t.model}</th>
+										<th>{t.requestsShort}</th>
+										<th>{t.input}</th>
+										<th>{t.output}</th>
+										<th>{t.cacheWriteShort}</th>
+										<th>{t.cacheReadShort}</th>
+										<th>{t.total}</th>
+										<th>{t.cost}</th>
+									</tr>
+								</thead>
+								<tbody>
+									{sortedModels.map(([name, stats], index) => {
+										const totalTk = modelValues.reduce((a, b) => a + b, 0);
+										const pct = totalTk > 0 ? ((stats.tokens / totalTk) * 100).toFixed(1) : 0;
+										return (
+											<tr key={name}>
+												<td>
+													<span
+														style={{
+															display: 'inline-block',
+															width: 10,
+															height: 10,
+															borderRadius: 2,
+															backgroundColor: modelColors[index % modelColors.length],
+															marginRight: 8,
+															verticalAlign: 'middle',
+														}}
+													/>
+													{name}
+												</td>
+												<td style={{ color: 'var(--accent-blue)', fontWeight: 500 }}>
+													{(stats.requestCount || 0).toLocaleString()}
+												</td>
+												<td>{formatNumber(stats.input)}</td>
+												<td>{formatNumber(stats.output)}</td>
+												<td>{formatNumber(stats.cacheWrite)}</td>
+												<td>{formatNumber(stats.cacheRead)}</td>
+												<td style={{ fontWeight: 600 }}>{formatNumber(stats.tokens)}</td>
+												<td>${stats.cost.toFixed(2)}</td>
+											</tr>
+										);
+									})}
+									{sortedModels.length === 0 && (
+										<tr>
+											<td
+												colSpan="7"
+												style={{ textAlign: 'center', color: 'var(--text-secondary)' }}
+											>
+												{t.noData}
+											</td>
+										</tr>
+									)}
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					{/* Recent Usage */}
+					<div className="recent-card" style={{ marginBottom: 24 }}>
+						<h3>{isHourlyView ? t.hourlyRecentUsage : t.recentUsage}</h3>
+						<table className="recent-table">
+							<thead>
+								<tr>
+									<th>{isHourlyView ? t.time : t.date}</th>
+									<th>{t.tokenCount}</th>
+									<th>{t.cost}</th>
+									<th>{t.models}</th>
+								</tr>
+							</thead>
+							<tbody>
+								{isHourlyView
+									? [...displayHourlyData].reverse().map((h, index) => (
+											<tr key={index}>
+												<td>{h.hour.replace('T', ' ')}</td>
+												<td>{formatNumber(h.totalTokens)}</td>
+												<td>${(h.totalCost || 0).toFixed(2)}</td>
+												<td title={h.modelsUsed?.join(', ')}>
+													{h.modelsUsed
+														?.map((m) =>
+															m
+																.replace('anthropic/', '')
+																.replace('claude-', '')
+																.replace(/-\d{8}$/, ''),
+														)
+														.join(', ') || '-'}
+												</td>
+											</tr>
+										))
+									: recentData.map((day, index) => (
+											<tr key={index}>
+												<td>{day.date}</td>
+												<td>{formatNumber(day.totalTokens)}</td>
+												<td>${(day.totalCost || 0).toFixed(2)}</td>
+												<td title={day.modelsUsed?.join(', ')}>
+													{day.modelsUsed
+														?.map((m) =>
+															m
+																.replace('anthropic/', '')
+																.replace('claude-', '')
+																.replace(/-\d{8}$/, ''),
+														)
+														.join(', ') || '-'}
+												</td>
+											</tr>
+										))}
+								{(isHourlyView ? displayHourlyData.length === 0 : recentData.length === 0) && (
+									<tr>
+										<td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+											{t.noData}
 										</td>
 									</tr>
-								))
-							: recentData.map((day, index) => (
-									<tr key={index}>
-										<td>{day.date}</td>
-										<td>{formatNumber(day.totalTokens)}</td>
-										<td>${(day.totalCost || 0).toFixed(2)}</td>
-										<td title={day.modelsUsed?.join(', ')}>
-											{day.modelsUsed
-												?.map((m) =>
-													m
-														.replace('anthropic/', '')
-														.replace('claude-', '')
-														.replace(/-\d{8}$/, ''),
-												)
-												.join(', ') || '-'}
-										</td>
-									</tr>
-								))}
-						{(isHourlyView ? displayHourlyData.length === 0 : recentData.length === 0) && (
-							<tr>
-								<td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-									{t.noData}
-								</td>
-							</tr>
-						)}
-					</tbody>
-				</table>
-			</div>
+								)}
+							</tbody>
+						</table>
+					</div>
+				</>
+			)}
 		</div>
 	);
 }
