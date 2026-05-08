@@ -949,23 +949,10 @@ function App() {
 						<span className="stat-unit"> {t.count}</span>
 					</div>
 				</div>
-				<div className="stat-card">
-					<div className="stat-label">
-						<span className="stat-icon" style={{ color: '#58a6ff' }}>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-							</svg>
-						</span>
-						<span>{t.totalRequests}</span>
-					</div>
-					<div className="stat-value">
-						{totalRequests.toLocaleString()}
-					</div>
-				</div>
 			</div>
 
 			{/* Token Category Breakdown */}
-			<div className="stats-grid" style={{ marginBottom: 24 }}>
+			<div className="stats-grid stats-grid-5" style={{ marginBottom: 24 }}>
 				<div className="stat-card">
 					<div className="stat-label">
 						<span className="stat-icon" style={{ color: '#58a6ff' }}>
@@ -1050,6 +1037,19 @@ function App() {
 					</div>
 					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
 						{formatNumber(totalCacheRead)}
+					</div>
+				</div>
+				<div className="stat-card">
+					<div className="stat-label">
+						<span className="stat-icon" style={{ color: '#58a6ff' }}>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+							</svg>
+						</span>
+						<span>{t.totalRequests}</span>
+					</div>
+					<div className="stat-value" style={{ fontSize: '1.5rem' }}>
+						{totalRequests.toLocaleString()}
 					</div>
 				</div>
 			</div>

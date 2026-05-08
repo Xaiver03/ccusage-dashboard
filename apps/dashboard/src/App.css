@@ -179,6 +179,10 @@
 	margin-bottom: 24px;
 }
 
+.stats-grid-5 {
+	grid-template-columns: repeat(5, 1fr);
+}
+
 .stat-card {
 	background: var(--bg-secondary);
 	padding: 20px 24px;
