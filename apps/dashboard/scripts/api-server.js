@@ -5,18 +5,21 @@
  */
 
 import { spawn } from 'child_process';
+import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 5174;
+const dataJsonPath = path.resolve(__dirname, '../public/data.json');
 
 // 刷新状态
 let refreshState = {
 	running: false,
 	startTime: null,
 	lastResult: null, // { ok, message, elapsed }
+	lastUpdated: null, // mtime of data.json when last refresh completed
 };
 
 function startRefresh() {
@@ -35,9 +38,18 @@ function startRefresh() {
 	child.on('close', (code) => {
 		const elapsed = ((Date.now() - refreshState.startTime) / 1000).toFixed(1);
 		refreshState.running = false;
-		refreshState.lastResult = code === 0
-			? { ok: true, message: `数据已更新 (${elapsed}s)` }
-			: { ok: false, message: `生成失败 (exit ${code})` };
+		if (code === 0) {
+			// Record the mtime of the freshly written data.json
+			try {
+				const stat = fs.statSync(dataJsonPath);
+				refreshState.lastUpdated = stat.mtimeMs;
+			} catch {
+				refreshState.lastUpdated = Date.now();
+			}
+			refreshState.lastResult = { ok: true, message: `数据已更新 (${elapsed}s)` };
+		} else {
+			refreshState.lastResult = { ok: false, message: `生成失败 (exit ${code})` };
+		}
 	});
 
 	child.on('error', (err) => {
@@ -75,11 +87,14 @@ const server = http.createServer((req, res) => {
 	// GET /api/status — 查询当前刷新状态
 	if (req.url === '/api/status' && req.method === 'GET') {
 		res.writeHead(200, { 'Content-Type': 'application/json' });
-		res.end(JSON.stringify({
-			ok: true,
-			running: refreshState.running,
-			lastResult: refreshState.lastResult,
-		}));
+		res.end(
+			JSON.stringify({
+				ok: true,
+				running: refreshState.running,
+				lastResult: refreshState.lastResult,
+				lastUpdated: refreshState.lastUpdated,
+			}),
+		);
 		return;
 	}
 

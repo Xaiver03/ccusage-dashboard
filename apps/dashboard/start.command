@@ -75,6 +75,22 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 启动 API 服务器（后台，用于刷新数据）
+echo -e "${BLUE}🔌 启动 API 服务器 (端口 5174)...${NC}"
+OLD_API_PIDS=$(lsof -ti :5174 2>/dev/null || true)
+if [ -n "$OLD_API_PIDS" ]; then
+    kill -9 $OLD_API_PIDS 2>/dev/null || true
+    sleep 0.5
+fi
+nohup node scripts/api-server.js > /tmp/ccusage-api.log 2>&1 &
+API_PID=$!
+sleep 1
+if lsof -ti :5174 &>/dev/null; then
+    echo -e "${GREEN}✓ API 服务器已启动 (PID: $API_PID)${NC}"
+else
+    echo -e "${YELLOW}⚠ API 服务器启动失败，刷新功能将不可用${NC}"
+fi
+
 # 后台启动 vite dev server
 echo -e "${BLUE}🚀 启动开发服务器...${NC}"
 npx vite --port $PORT > /tmp/ccusage-dashboard.log 2>&1 &
@@ -101,6 +117,7 @@ echo -e "${GREEN}║   ✅ 仪表盘启动成功!                   ║${NC}"
 echo -e "${GREEN}╠════════════════════════════════════════╣${NC}"
 echo -e "${GREEN}║   📍 访问: http://localhost:$PORT      ║${NC}"
 echo -e "${GREEN}║   📋 日志: /tmp/ccusage-dashboard.log  ║${NC}"
+echo -e "${GREEN}║   🔌 API:  /tmp/ccusage-api.log        ║${NC}"
 echo -e "${GREEN}║   🛑 停止: 按 Ctrl+C 或关闭此窗口      ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
 echo ""

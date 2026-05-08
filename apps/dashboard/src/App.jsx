@@ -169,7 +169,7 @@ function App() {
 	const loadData = async () => {
 		try {
 			setLoading(true);
-			const response = await fetch('/data.json?t=' + Date.now());
+			const response = await fetch('/data.json?t=' + Date.now(), { cache: 'no-store' });
 			if (!response.ok) throw new Error('Failed to load data');
 			const jsonData = await response.json();
 			setData(jsonData);
@@ -1042,7 +1042,14 @@ function App() {
 				<div className="stat-card">
 					<div className="stat-label">
 						<span className="stat-icon" style={{ color: '#58a6ff' }}>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+							>
 								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 							</svg>
 						</span>
