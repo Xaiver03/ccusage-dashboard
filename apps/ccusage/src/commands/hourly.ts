@@ -38,17 +38,17 @@ export const hourlyCommand = define({
 			const yesterdayStr = yesterday.toLocaleDateString('en-CA').replace(/-/g, '');
 			mergedOptions.since = yesterdayStr;
 			mergedOptions.until = yesterdayStr;
-		} else if (mergedOptions.last3days) {
+		} else if (mergedOptions.last3d) {
 			const threeDaysAgo = new Date(today);
 			threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
 			mergedOptions.since = threeDaysAgo.toLocaleDateString('en-CA').replace(/-/g, '');
 			mergedOptions.until = todayStr;
-		} else if (mergedOptions.last7days) {
+		} else if (mergedOptions.last7d) {
 			const sevenDaysAgo = new Date(today);
 			sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 			mergedOptions.since = sevenDaysAgo.toLocaleDateString('en-CA').replace(/-/g, '');
 			mergedOptions.until = todayStr;
-		} else if (mergedOptions.last30days) {
+		} else if (mergedOptions.last30d) {
 			const thirtyDaysAgo = new Date(today);
 			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 			mergedOptions.since = thirtyDaysAgo.toLocaleDateString('en-CA').replace(/-/g, '');

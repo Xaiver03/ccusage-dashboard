@@ -161,19 +161,19 @@ function runCusage(args) {
 function generateData() {
 	try {
 		console.log('获取每日数据...');
-		const dailyOutput = runCusage('daily --json');
+		const dailyOutput = runCusage('daily --json --offline');
 		const dailyData = JSON.parse(dailyOutput);
 
 		console.log('获取每月数据...');
-		const monthlyOutput = runCusage('monthly --json');
+		const monthlyOutput = runCusage('monthly --json --offline');
 		const monthlyData = JSON.parse(monthlyOutput);
 
 		console.log('获取会话数据...');
-		const sessionOutput = runCusage('session --json');
+		const sessionOutput = runCusage('session --json --offline');
 		const sessionData = JSON.parse(sessionOutput);
 
 		console.log('获取近三天小时级数据...');
-		const hourlyOutput = runCusage('hourly --json --last-3-days');
+		const hourlyOutput = runCusage('hourly --json --offline --last3d');
 		const hourlyData = JSON.parse(hourlyOutput);
 		console.log(`  小时数据: ${hourlyData.hourly?.length || 0} 条`);
 

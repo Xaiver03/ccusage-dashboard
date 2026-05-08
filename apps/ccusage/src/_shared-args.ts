@@ -120,17 +120,17 @@ export const sharedArgs = {
 		description: 'Show data for yesterday only',
 		default: false,
 	},
-	last3days: {
+	last3d: {
 		type: 'boolean',
 		description: 'Show data for last 3 days (including today)',
 		default: false,
 	},
-	last7days: {
+	last7d: {
 		type: 'boolean',
 		description: 'Show data for last 7 days (including today)',
 		default: false,
 	},
-	last30days: {
+	last30d: {
 		type: 'boolean',
 		description: 'Show data for last 30 days (including today)',
 		default: false,
