@@ -1,19 +1,35 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // 内置默认价格（per 1M tokens，USD）
-// 来源：Anthropic 官方定价
+// 来源：Anthropic 官方定价（作为 LiteLLM 加载失败时的兜底）
 const DEFAULT_PRICES = {
+	// Claude 4 系列
 	'claude-opus-4': { input: 15.0, output: 75.0, cacheWrite: 18.75, cacheRead: 1.5 },
 	'claude-sonnet-4': { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.3 },
 	'claude-sonnet-4-5': { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.3 },
 	'claude-sonnet-4-6': { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.3 },
-	'claude-haiku-4-5': { input: 0.8, output: 4.0, cacheWrite: 1.0, cacheRead: 0.08 },
+	'claude-haiku-4-5': { input: 1.0, output: 5.0, cacheWrite: 1.25, cacheRead: 0.1 },
+	// Claude 3.x 系列
 	'claude-opus-3-5': { input: 15.0, output: 75.0, cacheWrite: 18.75, cacheRead: 1.5 },
 	'claude-sonnet-3-5': { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.3 },
 	'claude-haiku-3-5': { input: 0.8, output: 4.0, cacheWrite: 1.0, cacheRead: 0.08 },
 	'claude-opus-3': { input: 15.0, output: 75.0, cacheWrite: 18.75, cacheRead: 1.5 },
 	'claude-sonnet-3': { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.3 },
 	'claude-haiku-3': { input: 0.25, output: 1.25, cacheWrite: 0.3, cacheRead: 0.03 },
+	// GLM 系列（智谱 AI，市场参考价）
+	'glm-4.5': { input: 0.6, output: 2.2, cacheWrite: 0.0, cacheRead: 0.0 },
+	'glm-4.5-air': { input: 0.13, output: 0.85, cacheWrite: 0.0, cacheRead: 0.0 },
+	'glm-5-turbo': { input: 1.2, output: 4.0, cacheWrite: 0.0, cacheRead: 0.0 },
+	'glm-5.1': { input: 1.26, output: 3.96, cacheWrite: 0.0, cacheRead: 0.0 },
+	// DeepSeek 系列（市场参考价）
+	'deepseek-v4-pro': { input: 0.145, output: 3.48, cacheWrite: 0.0, cacheRead: 0.0 },
+	'deepseek-v4-flash': { input: 0.135, output: 0.28, cacheWrite: 0.0, cacheRead: 0.0 },
+	// MiniMax 系列（市场参考价）
+	'MiniMax-M2.7-highspeed': { input: 0.3, output: 1.2, cacheWrite: 0.0, cacheRead: 0.0 },
+	// Kimi 系列（月之暗面，市场参考价）
+	'kimi-for-coding': { input: 0.6, output: 3.0, cacheWrite: 0.0, cacheRead: 0.0 },
+	// MiMo 系列（小米，市场参考价）
+	'mimo-v2.5-pro': { input: 1.0, output: 3.0, cacheWrite: 0.0, cacheRead: 0.0 },
 };
 
 const STORAGE_KEY = 'ccusage_pricing_overrides';
@@ -58,6 +74,10 @@ const translations = {
 		info: '价格覆盖将用于仪表盘的费用估算。未配置的模型使用 claude-sonnet-4-6 价格估算。',
 		noData: '暂无数据，请先刷新数据',
 		cancel: '取消',
+		litellmLoading: '正在从 LiteLLM 加载最新定价...',
+		litellmLoaded: '已从 LiteLLM 加载最新定价',
+		litellmError: '无法加载 LiteLLM 定价，使用内置默认值',
+		litellmSource: 'LiteLLM 数据源',
 	},
 	en: {
 		title: 'Model Pricing Config',
@@ -85,6 +105,10 @@ const translations = {
 		info: 'Price overrides are used for cost estimation in the dashboard. Unknown models fall back to claude-sonnet-4-6 pricing.',
 		noData: 'No data yet. Please refresh data first.',
 		cancel: 'Cancel',
+		litellmLoading: 'Loading latest pricing from LiteLLM...',
+		litellmLoaded: 'Loaded latest pricing from LiteLLM',
+		litellmError: 'Could not load LiteLLM pricing, using built-in defaults',
+		litellmSource: 'LiteLLM source',
 	},
 };
 
@@ -107,24 +131,61 @@ export function PricingConfig({ lang = 'zh', detectedModels = [] }) {
 	const [overrides, setOverrides] = useState(loadOverrides);
 	const [editingModel, setEditingModel] = useState(null);
 	const [editValues, setEditValues] = useState({});
-	const [savedModels, setSavedModels] = useState();
+	const [savedModels, setSavedModels] = useState({});
 	const [newModelName, setNewModelName] = useState('');
 	const [showAddForm, setShowAddForm] = useState(false);
+	const [litellmPrices, setLitellmPrices] = useState(null);
+	const [litellmLoading, setLitellmLoading] = useState(false);
+	const [litellmError, setLitellmError] = useState(null);
+
+	// Fetch LiteLLM prices from API server
+	useEffect(() => {
+		setLitellmLoading(true);
+		fetch('/api/pricing')
+			.then((res) => res.json())
+			.then((data) => {
+				if (data.ok && data.prices) {
+					setLitellmPrices(data.prices);
+				} else {
+					setLitellmError(data.message || 'Failed to load');
+				}
+			})
+			.catch((err) => setLitellmError(err.message))
+			.finally(() => setLitellmLoading(false));
+	}, []);
+
+	// Build effective default prices: LiteLLM prices take precedence over built-in defaults
+	const effectiveDefaults = useCallback(() => {
+		const base = { ...DEFAULT_PRICES };
+		if (litellmPrices) {
+			for (const [key, val] of Object.entries(litellmPrices)) {
+				if (val && (val.input != null || val.output != null)) {
+					base[key] = {
+						input: val.input ?? 3.0,
+						output: val.output ?? 15.0,
+						cacheWrite: val.cacheWrite ?? 3.75,
+						cacheRead: val.cacheRead ?? 0.3,
+					};
+				}
+			}
+		}
+		return base;
+	}, [litellmPrices]);
 
 	// Merge detected models with built-in defaults
 	const allModels = useCallback(() => {
-		const models = { ...DEFAULT_PRICES };
+		const models = effectiveDefaults();
 		for (const m of detectedModels) {
 			if (!models[m]) {
 				// Try to find a matching default by prefix
-				const matchKey = Object.keys(DEFAULT_PRICES).find((k) => m.includes(k) || k.includes(m));
+				const matchKey = Object.keys(models).find((k) => m.includes(k) || k.includes(m));
 				models[m] = matchKey
-					? { ...DEFAULT_PRICES[matchKey] }
+					? { ...models[matchKey] }
 					: { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.3 };
 			}
 		}
 		return models;
-	}, [detectedModels]);
+	}, [detectedModels, effectiveDefaults]);
 
 	const getEffectivePrice = (modelKey) => {
 		return (

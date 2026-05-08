@@ -13,6 +13,67 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 5174;
 const dataJsonPath = path.resolve(__dirname, '../public/data.json');
+const LITELLM_URL =
+	'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json';
+
+// Pricing cache
+let pricingCache = null;
+let pricingCacheTime = 0;
+const PRICING_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+async function fetchLiteLLMPricing() {
+	const now = Date.now();
+	if (pricingCache && now - pricingCacheTime < PRICING_CACHE_TTL) {
+		return pricingCache;
+	}
+	const { default: https } = await import('https');
+	return new Promise((resolve, reject) => {
+		https
+			.get(LITELLM_URL, (res) => {
+				let data = '';
+				res.on('data', (chunk) => (data += chunk));
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						// Extract only claude models with pricing info
+						const result = {};
+						for (const [key, val] of Object.entries(json)) {
+							if (
+								typeof key === 'string' &&
+								key.startsWith('claude-') &&
+								val &&
+								typeof val === 'object' &&
+								(val.input_cost_per_token != null || val.output_cost_per_token != null)
+							) {
+								result[key] = {
+									input:
+										val.input_cost_per_token != null ? val.input_cost_per_token * 1_000_000 : null,
+									output:
+										val.output_cost_per_token != null
+											? val.output_cost_per_token * 1_000_000
+											: null,
+									cacheWrite:
+										val.cache_creation_input_token_cost != null
+											? val.cache_creation_input_token_cost * 1_000_000
+											: null,
+									cacheRead:
+										val.cache_read_input_token_cost != null
+											? val.cache_read_input_token_cost * 1_000_000
+											: null,
+								};
+							}
+						}
+						pricingCache = result;
+						pricingCacheTime = now;
+						resolve(result);
+					} catch (e) {
+						reject(e);
+					}
+				});
+			})
+			.on('error', reject);
+	});
+}
 
 // 刷新状态
 let refreshState = {
@@ -95,6 +156,20 @@ const server = http.createServer((req, res) => {
 				lastUpdated: refreshState.lastUpdated,
 			}),
 		);
+		return;
+	}
+
+	// GET /api/pricing — 从 LiteLLM 获取 Claude 模型定价
+	if (req.url === '/api/pricing' && req.method === 'GET') {
+		fetchLiteLLMPricing()
+			.then((prices) => {
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify({ ok: true, prices }));
+			})
+			.catch((err) => {
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify({ ok: false, message: err.message, prices: {} }));
+			});
 		return;
 	}
 
