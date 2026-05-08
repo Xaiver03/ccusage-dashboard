@@ -178,21 +178,49 @@ function App() {
 	const handleRefresh = async () => {
 		if (refreshing) return;
 		setRefreshing(true);
-		setRefreshMsg(lang === 'zh' ? '正在重新生成数据...' : 'Regenerating data...');
+		setRefreshMsg(lang === 'zh' ? '开始生成数据...' : 'Starting...');
 		try {
+			// 触发后台生成，立即返回
 			const res = await fetch('/api/refresh', { method: 'POST' });
 			const json = await res.json();
-			if (json.ok) {
-				setRefreshMsg(json.message);
-				await loadData();
-			} else {
-				setRefreshMsg(json.message || (lang === 'zh' ? '刷新失败' : 'Refresh failed'));
+			if (!json.ok) {
+				setRefreshMsg(json.message || (lang === 'zh' ? '刷新失败' : 'Failed'));
+				setRefreshing(false);
+				setTimeout(() => setRefreshMsg(''), 3000);
+				return;
 			}
+
+			// 轮询状态直到完成
+			let dots = 0;
+			const poll = setInterval(async () => {
+				dots = (dots + 1) % 4;
+				const dotStr = '.'.repeat(dots + 1);
+				setRefreshMsg(lang === 'zh' ? `生成中${dotStr}` : `Generating${dotStr}`);
+				try {
+					const statusRes = await fetch('/api/status');
+					const status = await statusRes.json();
+					if (!status.running) {
+						clearInterval(poll);
+						const result = status.lastResult;
+						if (result?.ok) {
+							setRefreshMsg(result.message);
+							await loadData();
+						} else {
+							setRefreshMsg(result?.message || (lang === 'zh' ? '生成失败' : 'Failed'));
+						}
+						setRefreshing(false);
+						setTimeout(() => setRefreshMsg(''), 3000);
+					}
+				} catch {
+					clearInterval(poll);
+					setRefreshing(false);
+					setRefreshMsg('');
+				}
+			}, 800);
 		} catch {
 			// API server not running, just reload data.json
 			await loadData();
 			setRefreshMsg(lang === 'zh' ? '已重新加载' : 'Reloaded');
-		} finally {
 			setRefreshing(false);
 			setTimeout(() => setRefreshMsg(''), 3000);
 		}

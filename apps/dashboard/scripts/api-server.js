@@ -4,7 +4,7 @@
  * 由 start-dashboard.command 在后台启动，Vite dev server 通过代理转发请求
  */
 
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,10 +12,43 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 5174;
 
-let isRefreshing = false;
+// 刷新状态
+let refreshState = {
+	running: false,
+	startTime: null,
+	lastResult: null, // { ok, message, elapsed }
+};
+
+function startRefresh() {
+	if (refreshState.running) return false;
+
+	refreshState.running = true;
+	refreshState.startTime = Date.now();
+	refreshState.lastResult = null;
+
+	const generateScript = path.resolve(__dirname, 'generate-data.js');
+	const child = spawn('node', [generateScript], {
+		stdio: 'pipe',
+		timeout: 120000,
+	});
+
+	child.on('close', (code) => {
+		const elapsed = ((Date.now() - refreshState.startTime) / 1000).toFixed(1);
+		refreshState.running = false;
+		refreshState.lastResult = code === 0
+			? { ok: true, message: `数据已更新 (${elapsed}s)` }
+			: { ok: false, message: `生成失败 (exit ${code})` };
+	});
+
+	child.on('error', (err) => {
+		refreshState.running = false;
+		refreshState.lastResult = { ok: false, message: err.message };
+	});
+
+	return true;
+}
 
 const server = http.createServer((req, res) => {
-	// CORS headers
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 	res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -26,39 +59,27 @@ const server = http.createServer((req, res) => {
 		return;
 	}
 
+	// POST /api/refresh — 立即返回，后台异步生成
 	if (req.url === '/api/refresh' && req.method === 'POST') {
-		if (isRefreshing) {
-			res.writeHead(409, { 'Content-Type': 'application/json' });
-			res.end(JSON.stringify({ ok: false, message: '数据正在生成中，请稍候...' }));
+		if (refreshState.running) {
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify({ ok: true, running: true, message: '数据正在生成中...' }));
 			return;
 		}
-
-		isRefreshing = true;
-		const startTime = Date.now();
-
-		try {
-			const generateScript = path.resolve(__dirname, 'generate-data.js');
-			execSync(`node "${generateScript}"`, {
-				encoding: 'utf8',
-				timeout: 120000,
-				stdio: 'pipe',
-			});
-
-			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-			res.writeHead(200, { 'Content-Type': 'application/json' });
-			res.end(JSON.stringify({ ok: true, message: `数据已更新 (${elapsed}s)` }));
-		} catch (err) {
-			res.writeHead(500, { 'Content-Type': 'application/json' });
-			res.end(JSON.stringify({ ok: false, message: err.message }));
-		} finally {
-			isRefreshing = false;
-		}
+		startRefresh();
+		res.writeHead(200, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ ok: true, running: true, message: '开始生成数据...' }));
 		return;
 	}
 
+	// GET /api/status — 查询当前刷新状态
 	if (req.url === '/api/status' && req.method === 'GET') {
 		res.writeHead(200, { 'Content-Type': 'application/json' });
-		res.end(JSON.stringify({ ok: true, refreshing: isRefreshing }));
+		res.end(JSON.stringify({
+			ok: true,
+			running: refreshState.running,
+			lastResult: refreshState.lastResult,
+		}));
 		return;
 	}
 
